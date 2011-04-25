@@ -24,8 +24,8 @@ def draw_molecule(ctx, rootMol):
 
 		# Root molecule positioning
 		if not mol.parent:
-			mol.x = 250
-			mol.y = 250
+			mol.x = 75
+			mol.y = 75
 			mol.orient = 1
 			continue
 
@@ -41,13 +41,19 @@ def draw_molecule(ctx, rootMol):
 		elif parent.available['down'] and parent.orient == -1:
 			parent.positionDown(mol)
 
-	def draw_line(x1, y1, x2, y2):
+	def draw_line(x1, y1, x2, y2, typ='-'):
 		ctx.new_path()
 		ctx.set_source_rgb(0.0, 0.0, 0.0)
 		ctx.move_to(x1, y1)
 		ctx.line_to(x2, y2)
 		ctx.close_path()
 		ctx.stroke()
+
+		if typ == '=':
+			ctx.move_to(x1-5, y1+1)
+			ctx.line_to(x2-5, y2+1)
+			ctx.close_path()
+			ctx.stroke()
 
 	# ACTUAL DRAWING
 	queue = []
@@ -68,6 +74,6 @@ def draw_molecule(ctx, rootMol):
 		x2 = mol.x
 		y2 = mol.y
 
-		draw_line(x1, y1, x2, y2)
+		draw_line(x1, y1, x2, y2, mol.bond)
 
 
