@@ -26,7 +26,7 @@ def draw_molecule(ctx, rootMol):
 		if not mol.parent:
 			mol.x = 75
 			mol.y = 75
-			mol.orient = 1
+			mol.orient = -1
 			continue
 
 		# Has a parent...
@@ -41,7 +41,7 @@ def draw_molecule(ctx, rootMol):
 		elif parent.available['down'] and parent.orient == -1:
 			parent.positionDown(mol)
 
-	def draw_line(x1, y1, x2, y2, typ='-'):
+	def draw_line(x1, y1, x2, y2, atom='', typ='-'):
 		ctx.new_path()
 		ctx.set_source_rgb(0.0, 0.0, 0.0)
 		ctx.move_to(x1, y1)
@@ -49,6 +49,17 @@ def draw_molecule(ctx, rootMol):
 		ctx.close_path()
 		ctx.stroke()
 
+		atom = atom.upper()
+		if atom != 'C':
+			print atom
+			ctx.select_font_face ("Sans", FONT_SLANT_NORMAL, FONT_WEIGHT_BOLD)
+			ctx.set_font_size(21)
+			#x_bearing, y_bearing, width, height, \
+			#		x_advance, y_advance = ctx.text_extents(atom)
+
+			ctx.move_to(x2, y2)
+			ctx.show_text(atom)
+	
 		if typ == '=':
 			ctx.move_to(x1-5, y1+1)
 			ctx.line_to(x2-5, y2+1)
@@ -74,6 +85,6 @@ def draw_molecule(ctx, rootMol):
 		x2 = mol.x
 		y2 = mol.y
 
-		draw_line(x1, y1, x2, y2, mol.bond)
+		draw_line(x1, y1, x2, y2, mol.atom, mol.bond)
 
 
