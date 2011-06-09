@@ -5,6 +5,7 @@ import gtk
 
 from atom import Atom, create_graph
 from draw import draw_molecule
+from smiles import Smiles
 
 class Window(object):
 
@@ -84,9 +85,17 @@ class Window(object):
 		text = self.molEntry.get_text()
 		self.label.set_text(text)
 
-		self.atom = create_graph(text)	
-		self.debugText.set_text(str(self.atom))
+		dbg = ""
 
+		smiles = Smiles(text)
+		numAtoms = smiles.num_atoms()
+		dbg += "\n\nNum Atoms: %d" % numAtoms
+
+		self.atom = create_graph(text)	
+		dbg += "\n\nGraph\n===============\n"
+		dbg += str(self.atom)
+
+		self.debugText.set_text(dbg)
 
 		ctx = self.drawable.window.cairo_create()
 		draw_molecule(ctx, self.atom)
