@@ -54,3 +54,6 @@ class Smiles(object):
 
 		return cnt
 
+	def __str__(self):
+		"""String Representation."""
+		return "<Smiles: %s>" % self.string
