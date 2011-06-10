@@ -50,17 +50,20 @@ def test(string):
 	def is_bond(sym): return sym in BONDS
 	def is_branch_start(sym): return sym == '('
 	def is_branch_end(sym): return sym == ')'
-	def is_closure(sym): sym.isdigit()
+	def is_closure(sym): return sym.isdigit()
+	def is_bond_order(sym): return sym in '=#'
 
 	# Make note of the connection beween two atoms. 
-	def connect(a1, a2):
-		graph[a1][a2] = True
-		graph[a2][a1] = True
+	def connect(a1, a2, bondOrder=1):
+		graph[a1][a2] = bondOrder
+		graph[a2][a1] = bondOrder
 
 	# Keep track of state during parsing
 	atomCnt = 0 # Total num atoms
 	atomPrev = 0 # Previous atom 
+	bondOrder = 1 # Bond order: 1, 2, 3
 	branchStack = [] # Branching, eg. C(C)(C)C
+	closures = {} # Keep track of cycles, eg. c1ccccc1
 
 	for sym in queue:
 
@@ -69,7 +72,8 @@ def test(string):
 			atomCnt += 1
 
 			if atomId != 0:
-				connect(atomPrev, atomId)
+				connect(atomPrev, atomId, bondOrder)
+				bondOrder = 1
 
 			atomPrev = atomId
 
@@ -79,6 +83,19 @@ def test(string):
 		elif is_branch_end(sym): 
 			atomPrev = branchStack.pop()
 
+		elif is_closure(sym): # TODO: Won't handle > 9
+			num = int(sym)
+			if num not in closures:
+				closures[num] = atomPrev
+			else:
+				connect(atomPrev, closures[num], bondOrder)
+				bondOrder = 1
+
+		elif is_bond_order(sym):
+			if sym == '=':
+				bondOrder = 2
+			else:
+				bondOrder = 3
 
 	# TODO: RESUME WORK HERE
 	# TODO: RESUME WORK HERE
@@ -176,7 +193,7 @@ class MolGraph(object):
 			else:
 				ln = "%d   " % i 
 			for j in range(len(self.graph)):
-				ln += "1 " if self.graph[i][j] else ". "	
+				ln += str(self.graph[i][j]) + " " if self.graph[i][j] else ". "
 			print ln
 
 # Temporary, for testing!!!
