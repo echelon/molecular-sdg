@@ -1,3 +1,5 @@
+# FIXME: I don't have time to fix circular imports now
+#from matrix import *
 
 class Smiles(object):
 	"""
@@ -61,4 +63,29 @@ class Smiles(object):
 			pos += 1
 
 		return queue
+
+	@staticmethod
+	def canonicalize(smiles):
+		"""
+		Adapted from Morgan's original algorithm as presented in
+		[TODO: Source.]
+
+		Input: a Smiles() object.
+		Output: a Smiles() object.
+		"""
+
+		def computeInvariant():
+			"""
+			"""
+			pass
+
+
+		# We need graph invariants (topological indices not dependant 
+		# on the labeling scheme) and labels for each atom.
+		invariants = [1 for x in range(len(smiles.numAtoms()))]
+		labels = [0 for x in range(len(smiles.numAtoms()))]
+
+
+		invar = None# TODO: Compute invariant
+		l = []
 
