@@ -12,14 +12,14 @@ def smiles_to_matrix(string):
 	ATOMS = ['B', 'C', 'N', 'O', 'P', 'S', 'F', 'Cl', 'Br', 'I']
 	ATOMS_UPPER = map(lambda x: x.upper(), ATOMS)
 
+	# Additional Symbols
 	BRANCHING = '()' # Branch Start & End
 	BONDS = '=#'	 # Double and Triple Bonds
 	CONNECTIVE = '%' # Connectivity beyond '9' -- TODO NOT YET HANDLED.
 
 	smiles = Smiles(string)
 	queue = smiles.tokens
-	molmatrix = MolMatrix(smiles)
-	matrix = molmatrix.matrix
+	mat = MolMatrix(smiles.numAtoms())
 
 	# Symbol type tests
 	def is_atom(sym): return sym.upper() in ATOMS_UPPER
@@ -31,8 +31,8 @@ def smiles_to_matrix(string):
 
 	# Make note of the connection beween two atoms. 
 	def connect(a1, a2, bondOrder=1):
-		matrix[a1][a2] = bondOrder
-		matrix[a2][a1] = bondOrder
+		mat.connectMat[a1][a2] = bondOrder
+		mat.connectMat[a2][a1] = bondOrder
 
 	# Keep track of state during parsing
 	atomCnt = 0 # Total num atoms
@@ -80,31 +80,37 @@ def smiles_to_matrix(string):
 	# TODO: RESUME WORK HERE
 	# TODO: RESUME WORK HERE
 
-	return molmatrix
+	return mat
 
 class MolMatrix(object):
 	"""Adjacency Matrix for molecules."""
 
-	def __init__(self, molInput):
+	def __init__(self, size):
 		"""CTOR"""
 
-		if type(molInput) == str:
-			molInput = Smiles(molInput)
+		# Number of atoms.
+		self.size = size
 
-		self.smiles = molInput
-		
-		sz = molInput.numAtoms()
+		# Connectivity matrix 
+		self.connectMat = [[False for x in range(size)] 
+								for xx in range(size)]
 
-		self.matrix = [[False for x in range(sz)] for xx in range(sz)]
+		# Bond orders between atom pairs
+		self.bondOrderMat = [[False for x in range(size)] 
+									for xx in range(size)]
+
+		# Atom Labels. 
+		self.atomTypes = [False for x in range(size)]
 
 	def print_matrix(self):
 		"""Print the matrix. Debug."""
-		print "AdjMat for %s" % self.smiles
+		#print "AdjMat for %s" % self.smiles
+		print "TODO: Label."
 		# Won't print > 100 atoms nicely
-		ln = " "*3 if self.smiles.numAtoms() < 10 else " "*4
+		ln = " "*3 if self.size < 10 else " "*4
 
 		# Header numbers
-		for i in range(len(self.matrix)):
+		for i in range(len(self.connectMat)):
 			if i < 10 or i %2 == 0:
 				ln += "%d " % i
 			else:
@@ -112,18 +118,19 @@ class MolMatrix(object):
 		print ln
 
 		# Graph data
-		for i in range(len(self.matrix)):
-			if self.smiles.numAtoms() < 10 or i >= 10:
+		for i in range(len(self.connectMat)):
+			if self.size < 10 or i >= 10:
 				ln = "%d  " % i
 			else:
 				ln = "%d   " % i 
-			for j in range(len(self.matrix)):
-				ln += str(self.matrix[i][j]) + " " if self.matrix[i][j] else ". "
+			for j in range(len(self.connectMat)):
+				ln += str(self.connectMat[i][j]) + " " \
+						if self.connectMat[i][j] else ". "
 			print ln
 
 	def numAtoms(self):
 		"""Reports the number of atoms in the molecule."""
-		return len(self.matrix)
+		return len(self.connectMat)
 
 	def canonicalize(self):
 		"""
@@ -166,7 +173,7 @@ class MolMatrix(object):
 					pass # TODO: Bond orders to differentiate?
 			return hiPos
 
-		matrix = self.matrix
+		matrix = self.connectMat
 
 		size = len(matrix)
 		newMatrix = [[False for x in range(size)] for xx in range(size)]
@@ -204,7 +211,7 @@ class MolMatrix(object):
 				repeatLoop -= 1
 				#break
 			diff = diff2
-			iterCount += 1
+			iterCount += 1 # XXX: Hack, "CCCCC" alkane gets stuck in inf loop
 
 
 		# Score / Order the atoms by their labels.
@@ -244,4 +251,4 @@ class MolMatrix(object):
 
 
 		# TODO TODO -- Don't replace current object!
-		self.matrix = newMatrix
+		self.connectMat = newMatrix

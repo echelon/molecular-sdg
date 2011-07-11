@@ -14,6 +14,8 @@ def main():
 		sys.exit()
 		
 	#mol = MolMatrix(sys.argv[1])
+	smiles = Smiles(sys.argv[1])
+	print smiles.numAtoms()
 	mol = smiles_to_matrix(sys.argv[1])
 
 
