@@ -185,7 +185,8 @@ class MolMatrix(object):
 		diff = num_distinct(labels)
 		diff2 = diff
 		repeatLoop = 5
-		while repeatLoop > 0:
+		iterCount = 0
+		while repeatLoop > 0 and iterCount < 1000:
 			newLabels = [0 for x in range(size)]
 			# Recompute label as the sum of the neighbor atom's labels.
 			for i in range(size):
@@ -203,6 +204,7 @@ class MolMatrix(object):
 				repeatLoop -= 1
 				#break
 			diff = diff2
+			iterCount += 1
 
 
 		# Score / Order the atoms by their labels.
