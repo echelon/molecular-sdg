@@ -72,7 +72,7 @@ class Smiles(object):
 
 		# First, we must convert the input string into a proper queue
 		# Organic subset: B, C, N, O, P, S, F, Cl, Br, I 
-		# Everything else must be specified in brackets. 
+		# Everything else, including H: must be specified in brackets.
 		ATOMS = ['B', 'C', 'N', 'O', 'P', 'S', 'F', 'Cl', 'Br', 'I']
 		ATOMS_UPPER = map(lambda x: x.upper(), ATOMS)
 
@@ -94,8 +94,14 @@ class Smiles(object):
 
 		# Make note of the connection beween two atoms. 
 		def connect(a1, a2, bondOrder=1):
-			mat.connectMat[a1][a2] = bondOrder
-			mat.connectMat[a2][a1] = bondOrder
+			mat.connectMat[a1][a2] = True
+			mat.connectMat[a2][a1] = True
+			mat.bondOrderMat[a1][a2] = bondOrder
+			mat.bondOrderMat[a2][a1] = bondOrder
+
+		# Label the atom type
+		def label(a, name):
+			mat.atomTypes[a] = name
 
 		# Keep track of state during parsing
 		atomCnt = 0 # Total num atoms
@@ -109,8 +115,10 @@ class Smiles(object):
 			if is_atom(sym):
 				atomId = atomCnt
 				atomCnt += 1
+				label(atomId, sym)
 
 				if atomId != 0:
+					# TODO: Conjugated systems bond order = 1.5
 					connect(atomPrev, atomId, bondOrder)
 					bondOrder = 1
 
@@ -122,11 +130,13 @@ class Smiles(object):
 			elif is_branch_end(sym): 
 				atomPrev = branchStack.pop()
 
-			elif is_closure(sym): # TODO: Won't handle > 9
+			elif is_closure(sym):
+				# TODO: Won't handle > 9
 				num = int(sym)
 				if num not in ringClosures:
 					ringClosures[num] = atomPrev
 				else:
+					# TODO: Conjugated systems bond order = 1.5
 					connect(atomPrev, ringClosures[num], bondOrder)
 					bondOrder = 1
 
@@ -148,4 +158,8 @@ def smiles_to_matrix(smiles):
 		smiles = Smiles(smiles)
 
 	return smiles.toMatrix()
+
+def matrix_to_smiles(matrix):
+	# TODO: Need to convert back into a smiles expression.
+	pass
 

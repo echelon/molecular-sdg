@@ -22,9 +22,20 @@ class MolMatrix(object):
 
 	def print_matrix(self):
 		"""Print the matrix. Debug."""
+		print "TODO: Print Smiles Label, but from different module."
 		#print "AdjMat for %s" % self.smiles
-		print "TODO: Label."
-		# Won't print > 100 atoms nicely
+		# XXX: Won't print >= 100 atoms nicely. Not that I would want
+		# to print out such systems in the terminal...
+		ln = " "*3 if self.size < 10 else " "*4
+
+		# Header atoms
+		for i in range(self.size):
+			if len(self.atomTypes[i]) > 1:
+				ln += self.atomTypes[i]
+			else:
+				ln += "%s " % self.atomTypes[i]
+
+		print ln
 		ln = " "*3 if self.size < 10 else " "*4
 
 		# Header numbers
@@ -42,7 +53,7 @@ class MolMatrix(object):
 			else:
 				ln = "%d   " % i 
 			for j in range(len(self.connectMat)):
-				ln += str(self.connectMat[i][j]) + " " \
+				ln += str(int(self.connectMat[i][j])) + " " \
 						if self.connectMat[i][j] else ". "
 			print ln
 
