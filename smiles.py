@@ -1,5 +1,4 @@
-# FIXME: I don't have time to fix circular imports now
-#from matrix import *
+from matrix import *
 
 class Smiles(object):
 	"""
@@ -16,10 +15,14 @@ class Smiles(object):
 		self.tokens = self.tokenizeString(smilesStr)
 
 		# TODO: Canonoicalization
+		# XXX: Perhaps this isn't something I should even manage here...
 		self._cachedCanonical = None # Should be 'Smiles' instance
 
 	def numAtoms(self):
 		"""Calculates the number of non-H atoms"""
+		# XXX: This hydrogen-excluded policy WILL cause problems in the 
+		# future if I don't develop a comprehensive protocol for
+		# handling.
 		cnt = 0
 		for x in self.tokens:
 			x = str(x)
@@ -64,28 +67,85 @@ class Smiles(object):
 
 		return queue
 
-	@staticmethod
-	def canonicalize(smiles):
-		"""
-		Adapted from Morgan's original algorithm as presented in
-		[TODO: Source.]
+	def toMatrix(self):
+		"""Convert a SMILES string into a adjacency matrix representation."""
 
-		Input: a Smiles() object.
-		Output: a Smiles() object.
-		"""
+		# First, we must convert the input string into a proper queue
+		# Organic subset: B, C, N, O, P, S, F, Cl, Br, I 
+		# Everything else must be specified in brackets. 
+		ATOMS = ['B', 'C', 'N', 'O', 'P', 'S', 'F', 'Cl', 'Br', 'I']
+		ATOMS_UPPER = map(lambda x: x.upper(), ATOMS)
 
-		def computeInvariant():
-			"""
-			"""
-			pass
+		# Additional Symbols
+		BRANCHING = '()' # Branch Start & End
+		BONDS = '=#'	 # Double and Triple Bonds
+		CONNECTIVE = '%' # Connectivity beyond '9' -- TODO NOT YET HANDLED.
 
+		queue = self.tokens
+		mat = MolMatrix(self.numAtoms())
 
-		# We need graph invariants (topological indices not dependant 
-		# on the labeling scheme) and labels for each atom.
-		invariants = [1 for x in range(len(smiles.numAtoms()))]
-		labels = [0 for x in range(len(smiles.numAtoms()))]
+		# Symbol type tests
+		def is_atom(sym): return sym.upper() in ATOMS_UPPER
+		def is_bond(sym): return sym in BONDS
+		def is_branch_start(sym): return sym == '('
+		def is_branch_end(sym): return sym == ')'
+		def is_closure(sym): return sym.isdigit()
+		def is_bond_order(sym): return sym in '=#'
 
+		# Make note of the connection beween two atoms. 
+		def connect(a1, a2, bondOrder=1):
+			mat.connectMat[a1][a2] = bondOrder
+			mat.connectMat[a2][a1] = bondOrder
 
-		invar = None# TODO: Compute invariant
-		l = []
+		# Keep track of state during parsing
+		atomCnt = 0 # Total num atoms
+		atomPrev = 0 # Previous atom 
+		bondOrder = 1 # Bond order: 1, 2, 3
+		branchStack = [] # Branching, eg. C(C)(C)C
+		ringClosures = {} # Keep track of cycles, eg. c1ccccc1
+
+		for sym in queue:
+
+			if is_atom(sym):
+				atomId = atomCnt
+				atomCnt += 1
+
+				if atomId != 0:
+					connect(atomPrev, atomId, bondOrder)
+					bondOrder = 1
+
+				atomPrev = atomId
+
+			elif is_branch_start(sym):
+				branchStack.append(atomPrev)
+
+			elif is_branch_end(sym): 
+				atomPrev = branchStack.pop()
+
+			elif is_closure(sym): # TODO: Won't handle > 9
+				num = int(sym)
+				if num not in ringClosures:
+					ringClosures[num] = atomPrev
+				else:
+					connect(atomPrev, ringClosures[num], bondOrder)
+					bondOrder = 1
+
+			elif is_bond_order(sym):
+				if sym == '=':
+					bondOrder = 2
+				else:
+					bondOrder = 3
+
+		# End queue processing, return matrix.
+		return mat
+
+def smiles_to_matrix(smiles):
+	"""Function to return a MolMatrix from a smiles string without an
+	intermediate."""
+	# XXX: Do I really need to keep this?
+
+	if type(smiles) == str:
+		smiles = Smiles(smiles)
+
+	return smiles.toMatrix()
 
