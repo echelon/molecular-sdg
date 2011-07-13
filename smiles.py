@@ -1,4 +1,6 @@
 from matrix import *
+import string
+import sys # TODO: Temp for sys.exit()
 
 class Smiles(object):
 	"""
@@ -37,8 +39,19 @@ class Smiles(object):
 	@staticmethod
 	def tokenizeString(smileStr):
 		"""
-		Convert SMILES string into a list of tokens. 
-		Important because 'Cl', 'Br', etc. constitute one token.
+		Convert SMILES string into a list of tokens. Dealing with
+		tokens is much more convenient than working with a character
+		array. Nothing is removed, simply grouped.
+
+		The following items are multiple characters wide, but constitute
+		one token here:
+
+			* Organic subset atoms 'Cl' and 'Br'
+			* Digits beyond 10 (TODO)
+			* Charges (various formats): -, +++, 3-, +2
+		
+		Hydrogen and Inorganic atoms require special processing here.
+		(TODO)
 		"""
 		# TODO: This won't work for inorganic set (bracketed) 
 		# TODO: Stereochemistry
@@ -47,25 +60,99 @@ class Smiles(object):
 			'C': 'Cl',
 			'B': 'Br'
 		}
+		CHARGE = '+-' + string.digits
+		CHARGE_SIGN = '+-'
 
-		queue = []
+		print smileStr
+
+		# Process string. 
+		tokens = []
 		pos = 0
+		inBracket = False
 		while pos < len(smileStr):
-			ch = smileStr[pos]
+			char = smileStr[pos]
 
-			# Check for Br, Cl, etc.
-			if ch in READ_AHEAD and pos < len(smileStr)-1:
-				rd = ch + smileStr[pos+1]
-				if rd == READ_AHEAD[ch]:
-					ch = rd
-					pos += 1
+			# Current bracket state
+			if char == '[':
+				inBracket = True
+				tokens.append(char)
+				pos += 1
+				continue
 
-			# TODO: Connectivity beyond '9'
+			if char == ']':
+				inBracket = False
+				tokens.append(char)
+				pos += 1
+				continue
 
-			queue.append(ch)
+			# Group atom charges.
+			# Charges only occur in brackets. (TODO: Confirm via spec.)
+			if char in CHARGE and inBracket:
+				# Only confirm that this is a charge when a '+' or '-' 
+				# is encountered. Otherwise, digits could mean anything.
+				# XXX: This algorithm allows for invalid formats such 
+				# as '++5++2' and so forth, but at present I don't care
+				isCharge = False
+				chargeStr = ''
+				for i in range(pos, len(smileStr)):
+					rd = smileStr[i]
+					if rd not in CHARGE:
+						break
+					elif rd in CHARGE_SIGN:
+						isCharge = True
+
+					chargeStr += rd
+
+				if isCharge:
+					tokens.append(chargeStr)
+					pos += len(chargeStr)
+					continue
+
+			# Handle two+ character Inorganic set (eg. Co, Sn, etc.)
+			# We must be VERY careful not to group a bonded hydrogen.
+			# Examples of special cases to worry about are [OH] 
+			# (Hydroxide) and [nH] (Aromatic Nitrogen bonded to a  
+			# Hydrogen). Note: Inorganic only occur in brackets!
+			if char in string.uppercase and inBracket:
+				# TODO: Document design rationale
+				isInorganic = True
+				atomStr = ''
+				for i in range(pos, len(smileStr)):
+					rd = smileStr[i]
+					if rd not in string.letters:
+						break
+					atomStr += rd
+
+				if len(atomStr) > 1:
+					# Already know first letter is uppercase, but
+					# all subsequent letters must be lowercase
+					for x in atomStr[1:]:
+						if x not in string.lowercase:
+							isInorganic = False
+
+					if isInorganic:
+						tokens.append(atomStr)
+						pos += len(atomStr)
+						continue
+
+			# Handle Br and Cl (Organic Subset)
+			if char in READ_AHEAD and pos < len(smileStr)-1:
+				rd = char + smileStr[pos+1]
+				if rd == READ_AHEAD[char]:
+					tokens.append(rd)
+					pos += 2
+					continue
+
+			# Catch other cases
+			tokens.append(char)
 			pos += 1
 
-		return queue
+		print tokens
+
+
+		#print "Exiting"
+		#sys.exit() # XXX: TEMPORARY
+		return tokens 
 
 	def toMatrix(self):
 		"""Convert a SMILES string into a adjacency matrix representation."""
