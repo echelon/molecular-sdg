@@ -178,6 +178,7 @@ class Smiles(object):
 		BRANCHING = '()' # Branch Start & End
 		BONDS = '=#'	 # Double and Triple Bonds
 		CONNECTIVE = '%' # Connectivity beyond '9' -- TODO NOT YET HANDLED.
+		CHARGE = '+-'    # Cation/anion charge. Only occur in brackets.
 
 		queue = self.tokens
 		mat = MolMatrix(self.numAtoms())
@@ -190,6 +191,7 @@ class Smiles(object):
 		def is_branch_end(sym): return sym == ')'
 		def is_closure(sym): return sym.isdigit()
 		def is_bond_order(sym): return sym in '=#'
+		def is_charge(sym): return len(filter(lambda x: x in CHARGE, sym)) > 0
 
 		# Make note of the connection beween two atoms. 
 		def connect(a1, a2, bondOrder=1):
@@ -201,6 +203,31 @@ class Smiles(object):
 		# Label the atom type
 		def label(a, name):
 			mat.atomTypes[a] = name
+
+		# Parse the charge. Examples: +, --, 2+, -3
+		# TODO: Make more compact, and more valid to spec.
+		def parse_charge(chargeStr):
+			charge = 0
+			hasDigit = False
+			for x in chargeStr:
+				if x.isdigit():
+					hasDigit = True
+					break
+
+			# Type 1: 3+, -2
+			if hasDigit:
+				charge = int(chargeStr.replace('+', '').replace('-', ''))
+				if '-' in chargeStr:
+					charge *= -1
+				return charge
+
+			# Type 2: +++, --
+			for x in chargeStr:
+				if x is '-':
+					charge -= 1
+				elif x is '+':
+					charge += 1
+			return charge
 
 		# Keep track of state during parsing
 		atomCnt = 0 # Total num atoms
@@ -244,6 +271,13 @@ class Smiles(object):
 					bondOrder = 2
 				else:
 					bondOrder = 3
+
+			#elif is_charge(sym) and inBrackets:
+			elif is_charge(sym):
+				# TODO: Make sure we're inside brackets.
+				# The '-' symbol is also used for a few limited cases
+				# of single bond representation. 
+				mat.atomCharges[atomId] = parse_charge(sym)
 
 		# End queue processing, return matrix.
 		return mat

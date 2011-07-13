@@ -9,7 +9,7 @@ class MolMatrix(object):
 		self.size = size
 
 		# Connectivity matrix 
-		self.connectMat = [[False for x in range(size)] 
+		self.connectMat = [[False for x in range(size)]
 								for xx in range(size)]
 
 		# Bond orders between atom pairs
@@ -26,6 +26,11 @@ class MolMatrix(object):
 	def print_matrix(self):
 		"""Print the matrix. Debug."""
 		print "TODO: Print Smiles Label, but from different module."
+
+		print "Types: %s" % str(self.atomTypes)
+		print "Charges: %s" % str(self.atomCharges)
+		print "Isotopes: %s" % str(self.atomIsotopes)
+		print ""
 
 		#print "AdjMat for %s" % self.smiles
 		# XXX: Won't print >= 100 atoms nicely. Not that I would want
