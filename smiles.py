@@ -183,7 +183,8 @@ class Smiles(object):
 		mat = MolMatrix(self.numAtoms())
 
 		# Symbol type tests
-		def is_atom(sym): return sym.upper() in ATOMS_UPPER
+		#def is_atom(sym): return sym.upper() in ATOMS_UPPER
+		def is_atom(sym): return type(sym) is str and sym.isalpha() 
 		def is_bond(sym): return sym in BONDS
 		def is_branch_start(sym): return sym == '('
 		def is_branch_end(sym): return sym == ')'

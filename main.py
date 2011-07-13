@@ -18,7 +18,6 @@ from matrix import MolMatrix
 from smiles import Smiles
 from smiles import smiles_to_matrix
 
-
 def get_example():
 	"""Return an example molecule (name, smiles) tuple."""
 
@@ -60,3 +59,4 @@ def main():
 
 if __name__ == '__main__':
 	main()
+

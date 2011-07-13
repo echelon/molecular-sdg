@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 
 class MolMatrix(object):
 	"""Adjacency Matrix for molecules."""
@@ -14,19 +13,24 @@ class MolMatrix(object):
 								for xx in range(size)]
 
 		# Bond orders between atom pairs
+		# 1/Single '-' and implicit, 2/Double '=', 3/Triple '#', 
+		# TODO Aromatic as 1.5
 		self.bondOrderMat = [[False for x in range(size)] 
 									for xx in range(size)]
 
 		# Atom Labels. 
-		self.atomTypes = [False for x in range(size)]
+		self.atomTypes = [False for x in range(size)] # C, O, N, Cl, etc.
+		self.atomCharges = [0 for x in range(size)] # TODO
+		self.atomIsotopes = [0 for x in range(size)] # TODO
 
 	def print_matrix(self):
 		"""Print the matrix. Debug."""
 		print "TODO: Print Smiles Label, but from different module."
+
 		#print "AdjMat for %s" % self.smiles
 		# XXX: Won't print >= 100 atoms nicely. Not that I would want
 		# to print out such systems in the terminal...
-		ln = " "*3 if self.size < 10 else " "*4
+		ln = " "*5 if self.size < 10 else " "*6
 
 		# Header atoms
 		for i in range(self.size):
@@ -36,7 +40,7 @@ class MolMatrix(object):
 				ln += "%s " % self.atomTypes[i]
 
 		print ln
-		ln = " "*3 if self.size < 10 else " "*4
+		ln = " "*5 if self.size < 10 else " "*6
 
 		# Header numbers
 		for i in range(len(self.connectMat)):
@@ -48,13 +52,16 @@ class MolMatrix(object):
 
 		# Graph data
 		for i in range(len(self.connectMat)):
+			atom = self.atomTypes[i] # XXX: Can't print 3 char atoms...
+			if len(atom) < 2:
+				atom += " "
 			if self.size < 10 or i >= 10:
-				ln = "%d  " % i
+				ln = "%s %d  " % (atom, i)
 			else:
-				ln = "%d   " % i 
+				ln = "%s %d   " % (atom, i) 
 			for j in range(len(self.connectMat)):
-				ln += str(int(self.connectMat[i][j])) + " " \
-						if self.connectMat[i][j] else ". "
+				ln += str(int(self.bondOrderMat[i][j])) + " " \
+						if self.bondOrderMat[i][j] else ". "
 			print ln
 
 	def numAtoms(self):
@@ -187,13 +194,22 @@ class MolMatrix(object):
 			mapGraphs(newMat.connectMat, self.connectMat)
 			mapGraphs(newMat.bondOrderMat, self.bondOrderMat)
 
+		def map_atom(newMat, newPos, oldPos):
+			"""
+			Transfer the atom type, charge, isotope, etc. data to its 
+			new labeled position.
+			"""
+			newMat.atomTypes[newPos] = self.atomTypes[oldPos]
+			newMat.atomCharges[newPos] = self.atomCharges[oldPos]
+			newMat.atomIsotopes[newPos] = self.atomIsotopes[oldPos]
+
 		# Build new matrix
 		for i in range(size):
 			newAtmPos = i
 			oldAtmPos = canonicalOrder[i]
 			neighbors = get_neighbors(matrix, oldAtmPos)
 
-			newMolMat.atomTypes[newAtmPos] = self.atomTypes[oldAtmPos]
+			map_atom(newMolMat, newAtmPos, oldAtmPos)
 
 			for n in neighbors:
 				oldNbrPos = n
