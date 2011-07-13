@@ -1,4 +1,13 @@
-#!/usr/bin/env python2.6
+#!/usr/bin/env python
+
+"""
+This represents the current work on the Molecular Graph and Structure
+Diagram Generation (SDG) work that I am doing. There are several files
+in this repository that are not relevant anymore, but contain an earlier
+approach at drawing that I wish to retain for the time being.
+
+At present, the code I am working on is in 'matrix.py' and 'smiles.py'.
+"""
 
 # Std lib
 import sys

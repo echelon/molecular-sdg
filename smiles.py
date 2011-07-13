@@ -1,6 +1,5 @@
 from matrix import *
 import string
-import sys # TODO: Temp for sys.exit()
 
 class Smiles(object):
 	"""
@@ -39,31 +38,25 @@ class Smiles(object):
 	@staticmethod
 	def tokenizeString(smileStr):
 		"""
-		Convert SMILES string into a list of tokens. Dealing with
-		tokens is much more convenient than working with a character
-		array. Nothing is removed, simply grouped.
+		Convert SMILES string into a list of tokens. Working with
+		tokens is much more convenient than dealing with a character
+		array. Nothing is removed from the string, simply grouped.
 
 		The following items are multiple characters wide, but constitute
-		one token here:
+		'one token' each:
 
-			* Organic subset atoms 'Cl' and 'Br'
-			* Digits beyond 10 (TODO)
-			* Charges (various formats): -, +++, 3-, +2
-		
-		Hydrogen and Inorganic atoms require special processing here.
-		(TODO)
+			* Unbracketed Organic set atoms 'Cl' and 'Br'
+			* Bracketed Inorganics, such as 'Co' and 'Sn'
+			* Atomic charges (various formats): -, +++, 3-, +2
+			* Tetrahedral sterochemistry direction notation '@@'
+			* Digits beyond 9
 		"""
-		# TODO: This won't work for inorganic set (bracketed) 
-		# TODO: Stereochemistry
-		# TODO: This won't work for ring closures beyond the 9th.
 		READ_AHEAD = {
 			'C': 'Cl',
 			'B': 'Br'
 		}
 		CHARGE = '+-' + string.digits
 		CHARGE_SIGN = '+-'
-
-		print smileStr
 
 		# Process string. 
 		tokens = []
@@ -114,7 +107,6 @@ class Smiles(object):
 			# (Hydroxide) and [nH] (Aromatic Nitrogen bonded to a  
 			# Hydrogen). Note: Inorganic only occur in brackets!
 			if char in string.uppercase and inBracket:
-				# TODO: Document design rationale
 				isInorganic = True
 				atomStr = ''
 				for i in range(pos, len(smileStr)):
@@ -135,6 +127,15 @@ class Smiles(object):
 						pos += len(atomStr)
 						continue
 
+			# Handle tetrahedral stereochemistry symbol @@
+			# These only occur in brackets (TODO: Confirm via spec)
+			if char is '@' and inBracket and pos < len(smileStr)-1:
+				rd = char + smileStr[pos+1]
+				if rd == '@@':
+					tokens.append(rd)
+					pos += 2
+					continue
+
 			# Handle Br and Cl (Organic Subset)
 			if char in READ_AHEAD and pos < len(smileStr)-1:
 				rd = char + smileStr[pos+1]
@@ -143,15 +144,25 @@ class Smiles(object):
 					pos += 2
 					continue
 
+			# Group digits greater than nine.
+			# XXX: This collides with some other issues, like charges.
+			# Be sure those issues are tokenized first!
+			if char in string.digits:
+				digitStr = ''
+				for i in range(pos, len(smileStr)):
+					rd = smileStr[i]
+					if rd not in string.digits:
+						break
+					digitStr += rd
+
+				tokens.append(digitStr)
+				pos += len(digitStr)
+				continue
+
 			# Catch other cases
 			tokens.append(char)
 			pos += 1
 
-		print tokens
-
-
-		#print "Exiting"
-		#sys.exit() # XXX: TEMPORARY
 		return tokens 
 
 	def toMatrix(self):
