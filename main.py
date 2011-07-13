@@ -1,31 +1,53 @@
 #!/usr/bin/env python2.6
 
+# Std lib
 import sys
+import random
 
+# Project
 from matrix import MolMatrix
 from smiles import Smiles
 from smiles import smiles_to_matrix
 
+
+def get_example():
+	"""Return an example molecule (name, smiles) tuple."""
+
+	EXAMPLES = {
+		'hexane': 'CCCCCC',
+		'hexene': 'C=CCCCC',
+		'hexyne': 'C#CCCCC',
+		'isohexane': 'CC(C)CCC',
+		'adenine': 'n1c(c2c(nc1)ncn2)N',
+		'adenine{2}': 'c1[nH]c2c(ncnc2n1)N', # XXX: Error! Hydrogen included.
+		'acetic acid': 'CC(=O)O',
+		'p-bromocholobenzene': 'C1=CC(=CC=C1Cl)Br',
+		'vanillin': 'O=Cc1ccc(O)c(OC)c1',
+		'naphthalene': 'c1cccc2c1cccc2',
+	}
+
+	key = random.choice(EXAMPLES.keys())
+	return (key, EXAMPLES[key])
+
 def main():
 	"""Main function"""
 
+	smiles = None
 	if len(sys.argv) < 2:
-		print "Need to supply SMILES text as argument."
-		sys.exit()
-		
-	#mol = MolMatrix(sys.argv[1])
-	#smiles = Smiles(sys.argv[1])
-	#print smiles.numAtoms()
-	mol = smiles_to_matrix(sys.argv[1])
+		ex = get_example()
+		print ">>> Need to supply SMILES text as argument."
+		print ">>> Using %s \"%s\" as an example.\n" % ex 
+		smiles = ex[1]
+	else:
+		smiles = sys.argv[1]
 
-
-	mol.print_matrix()
-	print "\n"
-	mol.canonicalize()
-	mol.print_matrix()
+	mol1 = smiles_to_matrix(smiles)
+	mol1.print_matrix()
 	print "\n"
 
-	#mol.print_matrix()	
+	mol2 = mol1.canonicalize()
+	mol2.print_matrix()
+	print "\n"
 
 if __name__ == '__main__':
 	main()

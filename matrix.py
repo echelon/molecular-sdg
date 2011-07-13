@@ -64,7 +64,7 @@ class MolMatrix(object):
 	def canonicalize(self):
 		"""
 		Adapted from Morgan's original algorithm as presented in
-		[TODO: Source.]
+		[Handbook of Cheminformatics Algorithms]
 
 		1. Label each node with its degree.
 		2. Count number of different values.
@@ -74,6 +74,8 @@ class MolMatrix(object):
 			Awesome!!
 
 		"""
+
+		# Some subroutines used in the canonicalization procedure
 
 		def num_distinct(li):
 			"""Get the number of distinct vals in a list."""
@@ -102,10 +104,9 @@ class MolMatrix(object):
 					pass # TODO: Bond orders to differentiate?
 			return hiPos
 
-		matrix = self.connectMat
+		matrix = self.connectMat # Shortcut XXX: Remove?
 
-		size = len(matrix)
-		newMatrix = [[False for x in range(size)] for xx in range(size)]
+		size = len(matrix) # XXX: Remove this.
 
 		# Atom labels -- used to build the new indices
 		labels = [0 for x in range(size)]
@@ -115,6 +116,8 @@ class MolMatrix(object):
 			for j in range(size):
 				if matrix[i][j]:
 					labels[i] += 1
+
+		"""MORGAN'S ALGORITHM - PART ONE"""
 
 		# Calculate atom labels until the number of distinct labels no
 		# longer changes
@@ -142,9 +145,10 @@ class MolMatrix(object):
 			diff = diff2
 			iterCount += 1 # XXX: Hack, "CCCCC" alkane gets stuck in inf loop
 
+		"""MORGAN'S ALGORITHM - PART TWO"""
 
 		# Score / Order the atoms by their labels.
-		canonicalOrder = [] #[0 for x in range(size)]
+		canonicalOrder = []
 
 		# Node One will be the maximum labelled atom.
 		queue = []
@@ -162,22 +166,41 @@ class MolMatrix(object):
 					and hi not in queue:
 						queue.append(hi)
 
+		"""RECONSTRUCT THE NEW MATRIX"""
+
+		newMolMat = MolMatrix(self.size)
+
+		def map_connectivity(newMat, newAtmPos, oldAtmPos, 
+				newNbrPos, oldNbrPos):
+			"""
+			This function is called for each atom in order to map its
+			previous old graph connectivity into the new one. (Atoms 
+			are still bonded to the same neighbors.)
+			"""
+			def mapGraphs(newMat, oldMat):
+				newMat[newAtmPos][newNbrPos] = \
+						oldMat[oldAtmPos][oldNbrPos]
+				newMat[newNbrPos][newAtmPos] = \
+						oldMat[oldNbrPos][oldAtmPos]
+			
+			# Connectivity and Bond Order matrices
+			mapGraphs(newMat.connectMat, self.connectMat)
+			mapGraphs(newMat.bondOrderMat, self.bondOrderMat)
+
 		# Build new matrix
 		for i in range(size):
-			newAtomPos = i
-			oldAtomPos = canonicalOrder[i]
-			neighbors = get_neighbors(matrix, oldAtomPos)
+			newAtmPos = i
+			oldAtmPos = canonicalOrder[i]
+			neighbors = get_neighbors(matrix, oldAtmPos)
+
+			newMolMat.atomTypes[newAtmPos] = self.atomTypes[oldAtmPos]
 
 			for n in neighbors:
-				oldNeighborPos = n
-				newNeighborPos = canonicalOrder.index(n)
+				oldNbrPos = n
+				newNbrPos = canonicalOrder.index(n)
 
-				newMatrix[newAtomPos][newNeighborPos] = \
-						matrix[oldAtomPos][oldNeighborPos]
+				map_connectivity(newMolMat, newAtmPos, oldAtmPos, 
+							newNbrPos, oldNbrPos)
 
-				newMatrix[newNeighborPos][newAtomPos] = \
-						matrix[oldNeighborPos][oldAtomPos]
+		return newMolMat
 
-
-		# TODO TODO -- Don't replace current object!
-		self.connectMat = newMatrix
