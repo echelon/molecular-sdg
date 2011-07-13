@@ -1,6 +1,8 @@
 from matrix import *
 import string
 
+# TODO: Reorganize class
+# TODO: Fix documentation 
 class Smiles(object):
 	"""
 	SMILES (Simplified Molecular Input Line Entry Specification)
@@ -187,9 +189,7 @@ class Smiles(object):
 		#def is_atom(sym): return sym.upper() in ATOMS_UPPER
 		def is_atom(sym): return type(sym) is str and sym.isalpha() 
 		def is_bond(sym): return sym in BONDS
-		def is_branch_start(sym): return sym == '('
-		def is_branch_end(sym): return sym == ')'
-		def is_closure(sym): return sym.isdigit()
+		def is_closure(sym): return sym.isdigit() # TODO: Not a good test
 		def is_bond_order(sym): return sym in '=#'
 		def is_charge(sym): return len(filter(lambda x: x in CHARGE, sym)) > 0
 
@@ -201,8 +201,9 @@ class Smiles(object):
 			mat.bondOrderMat[a2][a1] = bondOrder
 
 		# Label the atom type
-		def label(a, name):
+		def label(a, name, isotope = 0):
 			mat.atomTypes[a] = name
+			mat.atomIsotopes[a] = isotope
 
 		# Parse the charge. Examples: +, --, 2+, -3
 		# TODO: Make more compact, and more valid to spec.
@@ -233,15 +234,26 @@ class Smiles(object):
 		atomCnt = 0 # Total num atoms
 		atomPrev = 0 # Previous atom 
 		bondOrder = 1 # Bond order: 1, 2, 3
+		isotope = 0 # Atom isotope
 		branchStack = [] # Branching, eg. C(C)(C)C
 		ringClosures = {} # Keep track of cycles, eg. c1ccccc1
+
+		# Bracket state. Brackets denote isotope, charge, inorganics...
+		inBrackets = False # Currently in brackets
+		inBracketsAtomFound = False # Atom encountered in brackets
 
 		for sym in queue:
 
 			if is_atom(sym):
 				atomId = atomCnt
 				atomCnt += 1
-				label(atomId, sym)
+
+				label(atomId, sym, isotope)
+				isotope = 0
+
+				if inBrackets:
+					# Once atom found, isotope can't be set.
+					inBracketsAtomFound = True
 
 				if atomId != 0:
 					# TODO: Conjugated systems bond order = 1.5
@@ -250,13 +262,25 @@ class Smiles(object):
 
 				atomPrev = atomId
 
-			elif is_branch_start(sym):
+			# Handle bracket state 
+			if sym == '[':
+				inBrackets = True
+				inBracketsAtomFound = False
+				continue
+			if sym == ']':
+				inBrackets = False
+				inBracketsAtomFound = False
+				continue
+
+			# Handle branching
+			if sym == '(':
 				branchStack.append(atomPrev)
-
-			elif is_branch_end(sym): 
+				continue
+			if sym == ')':
 				atomPrev = branchStack.pop()
+				continue
 
-			elif is_closure(sym):
+			if is_closure(sym):
 				# TODO: Won't handle > 9
 				num = int(sym)
 				if num not in ringClosures:
@@ -266,18 +290,23 @@ class Smiles(object):
 					connect(atomPrev, ringClosures[num], bondOrder)
 					bondOrder = 1
 
-			elif is_bond_order(sym):
+			if is_bond_order(sym):
 				if sym == '=':
 					bondOrder = 2
 				else:
 					bondOrder = 3
+				continue
 
-			#elif is_charge(sym) and inBrackets:
-			elif is_charge(sym):
+			if is_charge(sym) and inBrackets:
 				# TODO: Make sure we're inside brackets.
 				# The '-' symbol is also used for a few limited cases
 				# of single bond representation. 
 				mat.atomCharges[atomId] = parse_charge(sym)
+				continue
+
+			if sym.isdigit() and inBrackets and not inBracketsAtomFound:
+				# Isotope can only be set in brackets, before the atom.
+				isotope = sym
 
 		# End queue processing, return matrix.
 		return mat
