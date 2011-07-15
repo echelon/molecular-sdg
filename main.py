@@ -61,6 +61,7 @@ def main():
 	# XXX: Testing...
 	print "Chain Perception: \n"
 	chain_perception(mol1)
+	print smiles
 
 if __name__ == '__main__':
 	main()

@@ -26,6 +26,7 @@ class MolMatrix(object):
  		# XXX: These values are cached.
 		self._atomHybridizations = [None for x in range(size)]
 		self._atomDegrees = [None for x in range(size)]
+		self._neighbors = [None for x in range(size)]
 
 	def numAtoms(self):
 		"""Reports the number of atoms in the molecule."""
@@ -33,16 +34,24 @@ class MolMatrix(object):
 		# makes this inconsistent (and inaccurate--we can't get mol. weight)
 		return self.size
 
+	def getType(self, atomNum):
+		return self.atomTypes[atomNum]
+
 	def getNeighbors(self, atomNum):
 		"""
 		Returns the neighbors for a given atom. (ie. the alpha atoms).
 		This data is gleaned from the connection matrix.
 		"""
+		if self._neighbors[atomNum] != None:
+			return self._neighbors[atomNum][:]
+
 		# TODO: Could cache this...
 		n = []
 		for i in range(self.size):
 			if self.connectMat[atomNum][i]:
 				n.append(i)
+
+		self._neighbors[atomNum] = n[:]
 		return n
 
 	def getBetaAtoms(self, atomNum):
