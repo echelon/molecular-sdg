@@ -23,8 +23,9 @@ class MolMatrix(object):
 		self.atomCharges = [0 for x in range(size)]
 		self.atomIsotopes = [0 for x in range(size)]
 
- 		# XXX: Hybridization must be generated
-		self.atomHybridization = [None for x in range(size)]
+ 		# XXX: These values are cached.
+		self._atomHybridizations = [None for x in range(size)]
+		self._atomDegrees = [None for x in range(size)]
 
 	def numAtoms(self):
 		"""Reports the number of atoms in the molecule."""
@@ -33,25 +34,95 @@ class MolMatrix(object):
 		return self.size
 
 	def getNeighbors(self, atomNum):
-		"""Get the neighbors of an atom from the connection matrix."""
+		"""
+		Returns the neighbors for a given atom. (ie. the alpha atoms).
+		This data is gleaned from the connection matrix.
+		"""
+		# TODO: Could cache this...
 		n = []
 		for i in range(self.size):
 			if self.connectMat[atomNum][i]:
 				n.append(i)
 		return n
 
-	def getHybridization(self, atomNum):
-		"""Get the hybridization of an atom."""
-		numPi = 0 # Number of pi systems
-		for n in self.getNeighbors(atomNum):
-			bond = self.bondOrderMat[atomNum][n]
-			if bond >= 2:
-				numPi += bond - 1
+	def getBetaAtoms(self, atomNum):
+		"""
+		Returns the beta atoms for a given atom (ie. the neigbors of
+		neighbors). This data is gleaned from the connection matrix.
+		"""
+		# TODO: Could cache this...
+		neighbors = self.getNeighbors(atomNum)
+		beta = []
+		for n in neighbors:
+			for x in self.getNeighbors(n):
+				if x != atomNum and x not in beta:
+					beta.append(x)
+		return beta
 
-		hybridizations = {0: 'sp3', 1: 'sp2', 2: 'sp'}
-		if numPi not in hybridizations:
-			return 'error'
-		return hybridizations[numPi]
+	def getHybridization(self, atomNum):
+		"""
+		Get the hybridization state of an atom.
+		This is determined by analyzing the number of pi bond systems
+		from the connection table. 
+
+		Returns one of: {'sp', 'sp2', 'sp3', 'error'}
+		"""
+		# FIXME: Move to a higher level class?
+		# FIXME: Generation and caching strategy could result in errors. 
+
+		def generate():
+			"""Generate Hybridization State for each atom in the 
+			matrix."""
+			hybridizations = {0: 'sp3', 1: 'sp2', 2: 'sp'}
+			for i in range(self.numAtoms()):
+				numPi = 0 # Number of pi systems
+				for n in self.getNeighbors(i):
+					bond = self.bondOrderMat[i][n]
+					if bond >= 2:
+						numPi += bond - 1
+				hybrid = 'error'
+				if numPi in hybridizations:
+					hybrid = hybridizations[numPi]
+
+				self._atomHybridizations[i] = hybrid
+
+		if self._atomHybridizations[0] == None:
+			generate()
+
+		return self._atomHybridizations[atomNum]
+
+	def getDegree(self, atomNum):
+		"""
+		Get the degree of an atom.
+		For carbon, this is the number of other carbons it is directly
+		attached to. For other atoms, it is the degree of the carbon it
+		is attached to.
+		"""
+		# FIXME: Degree of ethers, amides, esters, carbonyls -- ???
+		if self._atomDegrees[atomNum] != None:
+			return self._atomDegrees[atomNum]
+
+		aType = self.atomTypes[atomNum].upper()
+		neighbors = self.getNeighbors(atomNum)
+		deg = 0
+
+		if aType == 'C':
+			# For carbon atoms
+			for n in neighbors:
+				if self.atomTypes[n].upper() == 'C':
+					deg += 1
+		else: 
+			# For non-carbon atoms
+			deg = -1
+			for n in neighbors:
+				# FIXME: Not sure what to do if two carbons, eg. Ether. 
+				if self.atomTypes[n].upper() == 'C':
+					deg = self.getDegree(n)
+					break
+
+		self._atomDegrees[atomNum] = deg
+		return deg
+
 
 	def print_matrix(self):
 		"""Print the matrix. Debug."""
@@ -60,6 +131,15 @@ class MolMatrix(object):
 		print "Types: %s" % str(self.atomTypes)
 		print "Charges: %s" % str(self.atomCharges)
 		print "Isotopes: %s" % str(self.atomIsotopes)
+
+		self.getHybridization(0) # XXX: Caches hybridizations. 
+		print "Hybridizations: %s" % str(self._atomHybridizations)
+
+		# XXX: Caches degrees
+		for n in range(self.size):
+			self.getDegree(n)
+
+		print "Degrees: %s" % str(self._atomDegrees)
 		print ""
 
 		#print "AdjMat for %s" % self.smiles

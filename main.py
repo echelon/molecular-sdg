@@ -17,6 +17,7 @@ import random
 from matrix import MolMatrix
 from smiles import Smiles
 from smiles import smiles_to_matrix
+from sdg.analysis import *
 
 def get_example():
 	"""Return an example molecule (name, smiles) tuple."""
@@ -53,15 +54,13 @@ def main():
 	mol1.print_matrix()
 	print "\n"
 
-	mol2 = mol1.canonicalize()
-	mol2.print_matrix()
-	print "\n"
+	#mol2 = mol1.canonicalize()
+	#mol2.print_matrix()
+	#print "\n"
 
-	#print "========================"
-	#print "Test Hybridizations:"
-	#for i in range(mol2.numAtoms()):
-	#	print mol2.getHybridization(i)
-
+	# XXX: Testing...
+	print "Chain Perception: \n"
+	chain_perception(mol1)
 
 if __name__ == '__main__':
 	main()
