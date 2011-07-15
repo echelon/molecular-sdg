@@ -20,8 +20,38 @@ class MolMatrix(object):
 
 		# Atom Labels. 
 		self.atomTypes = [False for x in range(size)] # C, O, N, Cl, etc.
-		self.atomCharges = [0 for x in range(size)] # TODO
-		self.atomIsotopes = [0 for x in range(size)] # TODO
+		self.atomCharges = [0 for x in range(size)]
+		self.atomIsotopes = [0 for x in range(size)]
+
+ 		# XXX: Hybridization must be generated
+		self.atomHybridization = [None for x in range(size)]
+
+	def numAtoms(self):
+		"""Reports the number of atoms in the molecule."""
+		# FIXME: Hydrogen exclusion, yet the ability to specify [nH] etc.
+		# makes this inconsistent (and inaccurate--we can't get mol. weight)
+		return self.size
+
+	def getNeighbors(self, atomNum):
+		"""Get the neighbors of an atom from the connection matrix."""
+		n = []
+		for i in range(self.size):
+			if self.connectMat[atomNum][i]:
+				n.append(i)
+		return n
+
+	def getHybridization(self, atomNum):
+		"""Get the hybridization of an atom."""
+		numPi = 0 # Number of pi systems
+		for n in self.getNeighbors(atomNum):
+			bond = self.bondOrderMat[atomNum][n]
+			if bond >= 2:
+				numPi += bond - 1
+
+		hybridizations = {0: 'sp3', 1: 'sp2', 2: 'sp'}
+		if numPi not in hybridizations:
+			return 'error'
+		return hybridizations[numPi]
 
 	def print_matrix(self):
 		"""Print the matrix. Debug."""
@@ -69,10 +99,6 @@ class MolMatrix(object):
 						if self.bondOrderMat[i][j] else ". "
 			print ln
 
-	def numAtoms(self):
-		"""Reports the number of atoms in the molecule."""
-		return len(self.connectMat)
-
 	def canonicalize(self):
 		"""
 		Adapted from Morgan's original algorithm as presented in
@@ -105,7 +131,7 @@ class MolMatrix(object):
 			return n
 
 		def max_pos(li):
-			"""Find the maximum position in a list"""
+			"""Find the position of the maximum value in a list"""
 			hi = li[0]
 			hiPos = 0
 			for i in range(len(li)):

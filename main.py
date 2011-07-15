@@ -57,6 +57,12 @@ def main():
 	mol2.print_matrix()
 	print "\n"
 
+	#print "========================"
+	#print "Test Hybridizations:"
+	#for i in range(mol2.numAtoms()):
+	#	print mol2.getHybridization(i)
+
+
 if __name__ == '__main__':
 	main()
 

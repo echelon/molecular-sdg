@@ -298,14 +298,13 @@ class Smiles(object):
 				continue
 
 			if is_charge(sym) and inBrackets:
-				# TODO: Make sure we're inside brackets.
 				# The '-' symbol is also used for a few limited cases
 				# of single bond representation. 
 				mat.atomCharges[atomId] = parse_charge(sym)
 				continue
 
+			# Isotope can only be set in brackets, before the atom.
 			if sym.isdigit() and inBrackets and not inBracketsAtomFound:
-				# Isotope can only be set in brackets, before the atom.
 				isotope = sym
 
 		# End queue processing, return matrix.
