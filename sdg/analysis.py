@@ -1,5 +1,7 @@
 # SDG Preassembly Analysis
 # From [Helson 1999]
+# XXX: This will be *extremely* messy until I have things sorted out
+# in my mind as to how the SDG pipeline works. 
 
 def ring_perception(graph):
 	# Ring perception greatly aids in the assembly phase. 
