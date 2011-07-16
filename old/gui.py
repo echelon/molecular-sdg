@@ -5,7 +5,7 @@ import gtk
 
 from atom import Atom, create_graph
 from draw import draw_molecule
-from smiles import Smiles
+#from smiles import Smiles
 
 class Window(object):
 
@@ -87,8 +87,9 @@ class Window(object):
 
 		dbg = ""
 
-		smiles = Smiles(text)
-		numAtoms = smiles.num_atoms()
+		#smiles = Smiles(text)
+		#numAtoms = smiles.num_atoms()
+		numAtoms = 0
 		dbg += "\n\nNum Atoms: %d" % numAtoms
 
 		self.atom = create_graph(text)	
