@@ -132,6 +132,19 @@ class MolMatrix(object):
 		self._atomDegrees[atomNum] = deg
 		return deg
 
+	def getConnectMat(self):
+		"""Build a connection matrix we can use in Floyd's algorithm"""
+
+		inf = float('Infinity')
+		newMat = [[inf for x in range(self.size)] for xx in range(self.size)]
+
+		for i in range(self.size):
+			for j in range(self.size):
+				val = self.connectMat[i][j]
+				val = inf if not val else 1
+				newMat[i][j] = val
+
+		return newMat
 
 	def print_matrix(self):
 		"""Print the matrix. Debug."""

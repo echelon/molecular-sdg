@@ -18,6 +18,8 @@ from matrix import MolMatrix
 from smiles import Smiles
 from smiles import smiles_to_matrix
 from sdg.analysis import *
+from util.matrix import print_matrix
+from algo.longpath import *
 
 def get_example():
 	"""Return an example molecule (name, smiles) tuple."""
@@ -58,9 +60,22 @@ def main():
 	#mol2.print_matrix()
 	#print "\n"
 
+	print "Floyd's Algorithm\n-----------------\n"
+	mat = mol1.getConnectMat()
+	data = longest_path(mat)
+	sys.exit()
+
+
+	print_matrix(data[0], [-1])
+	print ""
+	print_matrix(data[1], [-1])
+	print ""
+	
+	sys.exit()
+
 	# XXX: Testing...
 	print "Chain Perception: \n"
-	chain_perception(mol1)
+	identify_chains(mol1)
 	print smiles
 
 if __name__ == '__main__':
