@@ -53,32 +53,6 @@ def main():
 		smiles = sys.argv[1]
 
 	mol1 = smiles_to_matrix(smiles)
-	mol1.print_matrix()
-	print "\n"
-
-	#mol2 = mol1.canonicalize()
-	#mol2.print_matrix()
-	#print "\n"
-
-	print "Floyd's Algorithm\n-----------------\n"
-	mat = mol1.getConnectMat()
-	data = ShortestPaths(mat)
-	print "\n\n-------\n"
-
-	for i in range(mol1.numAtoms()):
-		for j in range(mol1.numAtoms()):
-			print "(%d, %d) -> %s" % (i, j, str(data.getWeight(i, j)))
-			print "(%d, %d) -> %s" % (i, j, str(data.findPath(i, j, True)))
-			print ""
-	sys.exit()
-
-	print "\n\n-------\n"
-	print_matrix(data[0], [-1])
-	print ""
-	print_matrix(data[1], [-1])
-	print ""
-	
-	sys.exit()
 
 	# XXX: Testing...
 	print "Chain Perception: \n"

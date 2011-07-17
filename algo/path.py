@@ -24,6 +24,12 @@ class ShortestPaths(object):
 		self.paths = None
 		pass
 
+	def size(self):
+		"""
+		Return the size of the matrix.
+		"""
+		return len(self.matrix)
+
 	def calculate(self):
 		"""
 		Calculate the shortest paths.

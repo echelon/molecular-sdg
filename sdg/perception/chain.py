@@ -1,3 +1,11 @@
+"""
+This module deals with Chain Perception.
+Chains are identified and returned. 
+"""
+
+# FIXME: This code is _really_ messy.
+
+from algo.path import ShortestPaths
 
 class Chain(object):
 	"""
@@ -132,22 +140,83 @@ def identify_core_chain(graph):
 	# I'll return the former for now. 
 	#print types
 	return coreChainFlags
-
+	
 def identify_chains(graph):
 	"""
 	We need to take core chain and identify the largest contiguous runs.
 	"""
-	coreChain = identify_core_chain(graph)
+	
+	def get_core_vertices(coreFlags):
+		"""Get a list of core vertices from core chain flags."""
+		core = []
+		for i in range(len(coreFlags)):
+			if coreFlags[i]:
+				core.append(i)
+		return core
 
-	print "Core Chain:"
-	print coreChain
+	def get_noncore_vertices(coreFlags):
+		"""Get a list of non-core vertices from core chain flags."""
+		core = []
+		for i in range(len(coreFlags)):
+			if not coreFlags[i]:
+				core.append(i)
+		return core
 
-	# Single source LONGEST path.
-	for i in range(len(coreChain)):
-		if not coreChain[i]:
-			continue
+	def disconnect_vertices(matrix, removeVerts = []):
+		"""Disconnect the vertices specified from the adj matrix."""
+		inf = float('Infinity')
+		length = len(matrix)
+		for vert in removeVerts:
+			for i in range(length):
+				matrix[i][vert] = inf
+				matrix[vert][i] = inf
 
-		#path = []
-		#while
-		#n = graph.getNeighbors(i)
+	def find_maxweight_verts(shortestPaths):
+		"""Find the maximum weight in a ShortestPaths object."""
+		inf = float('Infinity')
+		DNE = [inf, -inf, None]
+		length = shortestPaths.size()
+		maxWeight = -1
+		maxPath = (-1, -1)
+		for i in range(length):
+			for j in range(length):
+				weight = shortestPaths.getWeight(i, j)
+				if weight in DNE:
+					continue
+				if weight > maxWeight:
+					maxWeight = weight
+					maxPath = (i, j)
+
+		return maxPath
+
+	# Find, identify the "core chain" atoms
+	coreFlags = identify_core_chain(graph)
+
+	# Copy the molecule's connectivity matrix, then specify that all
+	# non-"core chain" atoms are to be removed in the first pass.
+	connectMat = graph.getConnectMat()
+	removeAtoms = get_noncore_vertices(coreFlags)
+
+	# Get all of the chains, starting with the longest. 
+	chains = []
+	while True:
+		# Disconnect the specified atoms from the connection matrix
+		# This ensures no two chains consist of the same atoms. 
+		disconnect_vertices(connectMat, removeAtoms)
+	
+		# (Re)calculate the shortest paths, and extract the longest chain
+		s = ShortestPaths(connectMat)
+		verts = find_maxweight_verts(s)
+		chain = s.findPath(verts[0], verts[1], include=True)
+
+		# FIXME: I assume this is the only condition that breaks the loop...
+		if type(chain) != list:
+			break
+
+		# Save the chain, then set up the removal of all atoms that
+		# were in it. 
+		chains.append(chain)
+		removeAtoms = chain[:]
 		
+
+	print chains

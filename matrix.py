@@ -133,7 +133,10 @@ class MolMatrix(object):
 		return deg
 
 	def getConnectMat(self):
-		"""Build a connection matrix we can use in Floyd's algorithm"""
+		"""
+		Build a connection matrix we can use in Floyd's algorithm.
+		'Not connected' is represented by infinity.
+		"""
 
 		inf = float('Infinity')
 		newMat = [[inf for x in range(self.size)] for xx in range(self.size)]
