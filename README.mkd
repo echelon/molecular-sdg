@@ -1,0 +1,46 @@
+This is my first attempt at ***Structure Diagram Generation***.
+
+I'm a complete novice in the field of cheminformatics (this project
+also marks the start of my foray into computational biochemistry). I'm
+starting here because it seems very promising to me that one can apply
+metaheuristics to the discovery and optimization of chemical 
+syntheses... plus, having SDG libraries (assuming this project makes it
+to maturity) will help me later on.
+
+_Don't use any of this code for anything_. It doesn't work yet 
+whatsoever--I'm still reading the literature. My primary goal for this
+project is to learn about the field, not really to produce anything 
+production ready. I think there's already SDG software for Python, 
+anyway. 
+
+Project Scope
+=============
+This is entirely experimental. I want to accomplish the following:
+
+Easy objectives 
+---------------
+
+* **SMILES parsing** -- _Done (mostly)_
+* **Chemical graph canonicalization** -- Morgan's algorithm, etc. Done, aside 
+  from proper stereochemistry. 
+* **Canonical SMILES generator**
+* **InChI parsing**
+* **InChI generator**
+* **IUPAC chemical name generator**
+
+Harder objectives
+-----------------
+
+* **First attempt at SDG** -- work in progress
+* **SA or GA to improve diagram quality**
+* **Chemical reaction representation**
+* **Automated chemical synthesis design**
+
+Literature Cited
+================
+
+* H. E. Helson, Structure Diagram Generation, 
+  _Reviews in Computational Chemistry_, **13**, 313 (1999).
+* Faulon et al., _Handbook of Chemoinformatics Algorithms_, 
+  Chapman and Hall/CRC Mathematical and Computational Biology (2010)
+
