@@ -3,15 +3,22 @@
 
 class ShortestPaths(object):
 	"""
-	Easy access to the Floyd-Warshall result set.
-	Contains the shortest path weight between any vertex pair.
-	Contains the shortest path reconstruction matrix between any vertex
-	pair. 
+	Floyd-Warshall shortest path between vertex pairs.
 
-	Do not create these objects directly.
+	Computes the shortest path between every vertex pair and stores the
+	weights and path reconstruction matrix. This algorithm is extremely
+	slow: O(n^3) worst case. Path reconstruction takes additional
+	recursive computation between each vertex pair.
+
+	You can do the calculation work upfront by calling calculate(), or
+	wait for the first call of getWeight() or findPath() to do so.
 	"""
 
 	def __init__(self, matrix):
+		"""
+		Supply the graph adjacency matrix.
+		Not connected must be represented by float('Infinity').
+		"""
 		self.matrix = matrix
 		self.weights = None
 		self.paths = None
