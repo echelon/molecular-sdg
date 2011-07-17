@@ -19,7 +19,7 @@ from smiles import Smiles
 from smiles import smiles_to_matrix
 from sdg.analysis import *
 from util.matrix import print_matrix
-from algo.longpath import *
+from algo.path import *
 
 def get_example():
 	"""Return an example molecule (name, smiles) tuple."""
@@ -62,10 +62,17 @@ def main():
 
 	print "Floyd's Algorithm\n-----------------\n"
 	mat = mol1.getConnectMat()
-	data = longest_path(mat)
+	data = ShortestPaths(mat)
+	print "\n\n-------\n"
+
+	for i in range(mol1.numAtoms()):
+		for j in range(mol1.numAtoms()):
+			print "(%d, %d) -> %s" % (i, j, str(data.getWeight(i, j)))
+			print "(%d, %d) -> %s" % (i, j, str(data.findPath(i, j, True)))
+			print ""
 	sys.exit()
 
-
+	print "\n\n-------\n"
 	print_matrix(data[0], [-1])
 	print ""
 	print_matrix(data[1], [-1])

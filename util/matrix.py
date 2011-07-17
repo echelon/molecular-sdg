@@ -3,7 +3,7 @@ Matrix utilities.
 """
 import sys
 
-def print_matrix(mat, ignoreList=False, ignoreChar='.'):
+def print_matrix(mat, ignoreList=False, replaceList=['.']):
 	"""
 	Print a matrix.
 	At present this is adapted to printing connection matrices and
@@ -21,11 +21,16 @@ def print_matrix(mat, ignoreList=False, ignoreChar='.'):
 	# If there are any values we shouldn't print. 
 	# XXX: This functionality is not very extensive. 
 	doIgnore = True 
+	doListReplace = False
 	if type(ignoreList) == type(False): # XXX: I should know better than this..
 		doIgnore = False
+		ignoreList = [False]
 	elif type(ignoreList) != list:
 		ignoreList = [ignoreList]
-	
+
+	if type(replaceList) == list and len(replaceList) == len(ignoreList):
+		doListReplace = True
+
 	length = len(mat)
 	width = len(mat[0])
 	inf = float('Infinity')
@@ -54,7 +59,10 @@ def print_matrix(mat, ignoreList=False, ignoreChar='.'):
 		for j in range(width):
 			val = mat[i][j]
 			if doIgnore and val in ignoreList:
-				val = ignoreChar
+				if doListReplace:
+					val = replaceList[ignoreList.index(val)]
+				else:
+					val = replaceList[0]
 
 			if val in [inf, -inf]:
 				val = uinf
