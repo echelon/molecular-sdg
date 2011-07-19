@@ -4,6 +4,7 @@
 # in my mind as to how the SDG pipeline works. 
 
 from perception.chain import *
+from perception.ring import *
 
 def ring_perception(graph):
 	# Ring perception greatly aids in the assembly phase. 

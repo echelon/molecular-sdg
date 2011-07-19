@@ -40,7 +40,7 @@ Reference Literature
 ====================
 
 * Helson, H. E. "Structure Diagram Generation", 
-  _Reviews in Computational Chemistry_, **13**, 313 (1999).
+  _Reviews in Computational Chemistry_, **13**, 313-398 (1999).
 
 * Downs, G. M. et al., "Review of Ring Perception Algorithms for Chemical
   Graphs", _J. Chem. Inf. Comput. Sci._, **29 (3)**, 172-187 (1989).
@@ -49,5 +49,5 @@ Reference Literature
   _J. Chem. Inf. Comput. Sci._, **16 (1)**, 40-43 (1976).
 
 * Faulon et al., _Handbook of Chemoinformatics Algorithms_, 
-  Chapman and Hall/CRC Mathematical and Computational Biology (2010)
+  Chapman and Hall/CRC Mathematical and Computational Biology (2010).
 

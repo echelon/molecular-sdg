@@ -52,12 +52,16 @@ def main():
 	else:
 		smiles = sys.argv[1]
 
-	mol1 = smiles_to_matrix(smiles)
+	mol = smiles_to_matrix(smiles)
 
 	# XXX: Testing...
-	print "Chain Perception: \n"
-	identify_chains(mol1)
-	print smiles
+	#print "Chain Perception: \n"
+	#identify_chains(mol)
+	#print smilesA
+
+	for i in range(mol.numAtoms()):
+		r = find_smallest_ring(mol, i)
+		print r
 
 if __name__ == '__main__':
 	main()
