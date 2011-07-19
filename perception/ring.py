@@ -121,6 +121,7 @@ def find_smallest_ring(mol, first=0, second=None):
 			if len(dfs.pathStack) < smallestRing:
 				# Save the result. 
 				resultSet = dfs.pathStack[:]
+				smallestRing = len(resultSet)
 				dfs.pop()
 				if dfs.solutionFound():
 					return resultSet
