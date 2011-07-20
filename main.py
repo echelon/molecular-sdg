@@ -59,9 +59,16 @@ def main():
 	#identify_chains(mol)
 	#print smilesA
 
+	"""print "Num atoms; %d" % mol.numAtoms()
 	for i in range(mol.numAtoms()):
-		r = find_smallest_ring(mol, i)
-		print r
+		j = (i + 1) % mol.numAtoms()
+		r = find_smallest_ring(mol, i, j)
+		print "(%d, %d)  =  %s" % (i, j, str(r))
+	"""
+
+	print find_smallest_ring(mol, 9)
+
+	phase1(mol)
 
 if __name__ == '__main__':
 	main()
