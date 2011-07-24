@@ -17,7 +17,7 @@ class Chain(object):
 		self.caps = [] # There are two end caps. 
 		self.zigzag = [] # Zigzag pattern along the chain from {L,R}. 
 
-def identify_core_chain(graph):
+def identify_core_chain(graph, ringAtoms = []):
 	"""
 	Chain perception information aids in the assembly phase.
 	But since chains are not prefabricated units (PFUs), this 
@@ -42,18 +42,31 @@ def identify_core_chain(graph):
 	"""Determine which atoms belong to a core chain."""
 
 	for atomNum in range(graph.numAtoms()):
-		# FIXME: Assume acyclic
-		# FIXME: What does Helson mean, "not partially selected"? p340
-		# FIXME: Assume neighbors are acyclic 
-		neighbors = graph.getNeighbors(atomNum)
+		# TODO: What does Helson mean, "not partially selected"? p340
+		# Atom cannot be a ring atom. 
+		if atomNum in ringAtoms:
+			continue
 
 		# Atom cannot be sp-hybridized
 		# FIXME: hybridization error handling. 
 		if graph.getHybridization(atomNum) in ['sp', 'error']:
 			continue
 	
+		neighbors = graph.getNeighbors(atomNum)
+
 		# FIXME: Assume neighbors are acyclic 
+		# Must have at least two neighbors
 		if len(neighbors) < 2:
+			continue
+
+		# Must have at least one acyclic neighbor
+		hasAcyclic = False
+		for n in neighbors:
+			if n not in ringAtoms:
+				hasAcyclic = True
+				break
+
+		if not hasAcyclic:
 			continue
 
 		# Determine if it has an acyclic beta atom
@@ -141,7 +154,7 @@ def identify_core_chain(graph):
 	#print types
 	return coreChainFlags
 	
-def identify_chains(graph):
+def identify_chains(graph, rings=None):
 	"""
 	We need to take core chain and identify the largest contiguous runs.
 	"""
@@ -189,8 +202,17 @@ def identify_chains(graph):
 
 		return maxPath
 
+	# Ring atoms cannot be considered.
+	# TODO: Currently, only a list of lists is supported as ring input.
+	ringAtoms = []
+	if rings:
+		ratoms = []
+		for r in rings:
+			ratoms += r
+		ringAtoms = list(set(ratoms))
+
 	# Find, identify the "core chain" atoms
-	coreFlags = identify_core_chain(graph)
+	coreFlags = identify_core_chain(graph, ringAtoms)
 
 	# Copy the molecule's connectivity matrix, then specify that all
 	# non-"core chain" atoms are to be removed in the first pass.
@@ -219,4 +241,4 @@ def identify_chains(graph):
 		removeAtoms = chain[:]
 		
 
-	print chains
+	return chains

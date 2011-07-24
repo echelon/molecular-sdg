@@ -147,7 +147,16 @@ def find_smallest_ring(mol, first=0, second=None):
 
 			continue
 
-def phase1(mol):
+# TODO: Implement phase 1 heuristics
+# TODO: Implement phase 2
+# TODO: Implement phase 3
+
+def identify_rings(mol):
+	"""
+	Identify the rings in the system with Zamora's SSSR ring perception
+	algorithm. 
+	TODO: Documentation.
+	"""
 
 	def zamora_connectivity(mol):
 		"""
@@ -192,36 +201,46 @@ def phase1(mol):
 
 		return ci
 
-	# Connectivity index for each atom
-	connectivity = zamora_connectivity(mol)
+	def phase1(mol):
+		"""
+		Phase One processing takes care of "Type One" ring systems, as
+		well as ring systems that can be reduced to Type One. 
+		TODO: Documentation. 
+		"""
 
-	# List of unused atom labels. (Elements deleted as used.)
-	unusedAtoms = range(mol.numAtoms()) # XXX: May not be best approach.
+		# Connectivity index for each atom
+		connectivity = zamora_connectivity(mol)
 
-	rings = []
-	while len(unusedAtoms) > 0:
-		# Find the unused atom with the highest connectivity, then the 
-		# smallest (and best) ring that contains it. 
-		# TODO/FIXME/XXX: Absolutely need to implement Zamora's heuristics
-		startAtom = connectivity.index(max(connectivity))
-		ring = find_smallest_ring(mol, startAtom)
+		# List of unused atom labels. (Elements deleted as used.)
+		unusedAtoms = range(mol.numAtoms()) # XXX: May not be best approach.
 
-		if len(ring) < 1:
-			# Atom is not in a ring system. 
-			unusedAtoms.remove(startAtom)
-			connectivity[startAtom] = -1
-			continue
+		rings = []
+		while len(unusedAtoms) > 0:
+			# Find the unused atom with the highest connectivity, then the 
+			# smallest (and best) ring that contains it. 
+			# TODO/FIXME/XXX: Absolutely need to implement Zamora's heuristics
+			startAtom = connectivity.index(max(connectivity))
+			ring = find_smallest_ring(mol, startAtom)
 
-		rings.append(ring)
+			if len(ring) < 1:
+				# Atom is not in a ring system. 
+				unusedAtoms.remove(startAtom)
+				connectivity[startAtom] = -1
+				continue
 
-		# Remove used atoms.
-		unusedAtoms = filter(lambda x: x not in ring, unusedAtoms)
+			rings.append(ring)
 
-		# Negate connectivity for used atoms. 
-		for i in range(len(connectivity)):
-			if i not in unusedAtoms:
-				connectivity[i] = -1
+			# Remove used atoms.
+			unusedAtoms = filter(lambda x: x not in ring, unusedAtoms)
+
+			# Negate connectivity for used atoms. 
+			for i in range(len(connectivity)):
+				if i not in unusedAtoms:
+					connectivity[i] = -1
 
 
-	print rings
+		return rings
+
+	# TODO: Implement phase two and three.
+	return phase1(mol)
 
