@@ -20,8 +20,9 @@ from smiles import smiles_to_matrix
 from sdg.analysis import *
 from util.matrix import print_matrix
 from algo.path import *
+from sdg.ring_analysis import *
 
-def get_example():
+def get_example(key=None):
 	"""Return an example molecule (name, smiles) tuple."""
 
 	EXAMPLES = {
@@ -30,14 +31,53 @@ def get_example():
 		'hexyne': 'C#CCCCC',
 		'isohexane': 'CC(C)CCC',
 		'adenine': 'n1c(c2c(nc1)ncn2)N',
-		'adenine{2}': 'c1[nH]c2c(ncnc2n1)N', # XXX: Error! Hydrogen included.
+		'adenine2': 'c1[nH]c2c(ncnc2n1)N', # XXX: Hydrogen included!
 		'acetic acid': 'CC(=O)O',
 		'p-bromocholobenzene': 'C1=CC(=CC=C1Cl)Br',
 		'vanillin': 'O=Cc1ccc(O)c(OC)c1',
+		'toulene': 'Cc1ccccc1',
+
+		# Polycyclic Aromatic Hydrocarbons
 		'naphthalene': 'c1cccc2c1cccc2',
+		'acenaphthene': 'c2cc1cccc3c1c(c2)CC3',
+		'benzo[k]fluoranthene': 'c1ccc2cc-3c(cc2c1)-c4cccc5c4c3ccc5',
+		'coronene': 'c1cc2ccc3ccc4ccc5ccc6ccc1c7c2c3c4c5c67', # 'superbenzene'
+		'dicoronylene': 'c1cc2ccc3cc4c9cc%10ccc%11ccc%12ccc%13ccc%14cc(c5cc6'
+				+ 'ccc7ccc1c8c2c3c(c45)c6c78)c9c%15c%10c%11c%12c%13c%14%15',
+
+		# Basic Stereochemistry
+		'coenzyme-a': 'c1c2c(cc(c1F)N3CCNCC3)n(cc(c2=O)C(=O)O)C4CC4',
+
+		# Bridged systems
+		'pericine': 'c23c1ccccc1nc2\C(=C)[C@H]4C(=C/C)\CN(CC3)CC4',
+		'trogers-base': 'c1(ccc3c(c1)CN4c2ccc(cc2CN3C4)C)C',
+		'lurasidone': 'O=C1N(C(=O)[C@H]3[C@@H]1[C@@H]2CC[C@H]3C2)C[C@@H'
+						+ ']4CCCC[C@H]4CN7CCN(c6nsc5ccccc56)CC7',
+
 	}
 
-	key = random.choice(EXAMPLES.keys())
+	def get_key(k, li):
+		# Random or exact key
+		if key == None:
+			return random.choice(li.keys())
+		if key in li:
+			return key
+
+		# Key is a numeric offset into list 
+		# XXX: Bad idea! These aren't stored in order.
+		try:
+			if str(int(k)) == k:
+				return li.keys()[int(k)]
+		except:
+			pass
+
+		return None
+
+	key = get_key(key, EXAMPLES)
+
+	if not key:
+		return None
+
 	return (key, EXAMPLES[key])
 
 def main():
@@ -50,7 +90,12 @@ def main():
 		print ">>> Using %s \"%s\" as an example.\n" % ex 
 		smiles = ex[1]
 	else:
-		smiles = sys.argv[1]
+		ex = get_example(sys.argv[1])
+		if ex:
+			print ">>> Using %s per argument.\n" % ex[0] 
+			smiles = ex[1]
+		else:
+			smiles = sys.argv[1]
 
 	mol = smiles_to_matrix(smiles)
 
@@ -66,9 +111,23 @@ def main():
 		print "(%d, %d)  =  %s" % (i, j, str(r))
 	"""
 
-	print find_smallest_ring(mol, 9)
+	#print find_smallest_ring(mol, mol.numAtoms()-1)
 
-	phase1(mol)
+	rings = identify_rings(mol)
+	chains = identify_chains(mol, rings)
+
+	print "SMILES: %s\n" % smiles
+	print "Ring Perception (%d):\n%s\n" % (len(rings), rings)
+	print "\nChain Perception (%d):\n%s\n" % (len(chains), chains)
+
+	peelOrder = ring_analysis(rings)	
+
+	print "\n\nRing Peel Order:"
+	for x in peelOrder:
+		print x
+	
+	print "\n\n(Repeated) Ring Perception (%d):\n%s\n" % (len(rings), rings)
+	print "Smiles: %s" % smiles
 
 if __name__ == '__main__':
 	main()
