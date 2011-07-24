@@ -64,6 +64,7 @@ class Smiles(object):
 		tokens = []
 		pos = 0
 		inBracket = False
+		inPercent = False
 		while pos < len(smileStr):
 			char = smileStr[pos]
 
@@ -79,6 +80,16 @@ class Smiles(object):
 				tokens.append(char)
 				pos += 1
 				continue
+
+			# Current percent label state (for digits > 9)
+			if char == '%':
+				inPercent = True
+				tokens.append(char)
+				pos += 1
+				continue
+
+			if inPercent and not char.isdigit():
+				inPercent = False
 
 			# Group atom charges.
 			# Charges only occur in brackets. (TODO: Confirm via spec.)
@@ -146,10 +157,25 @@ class Smiles(object):
 					pos += 2
 					continue
 
-			# Group digits greater than nine.
-			# XXX: This collides with some other issues, like charges.
-			# Be sure those issues are tokenized first!
-			if char in string.digits:
+			# Group connectivity labels greater than nine.
+			# ie, connectivity as in 'c%12cccccc%12'
+			if char in string.digits and inPercent:
+				digitStr = ''
+				for i in range(pos, len(smileStr)):
+					rd = smileStr[i]
+					if rd not in string.digits:
+						break
+					digitStr += rd
+
+				tokens.append(digitStr)
+				pos += len(digitStr)
+				continue
+
+			# Group isotope digits. Must be handled separately from
+			# connectivity labels and charges.
+			# TODO: Verify from spec what happens if labels > 9 and
+			# isotope are present. 
+			if char in string.digits and inBracket:
 				digitStr = ''
 				for i in range(pos, len(smileStr)):
 					rd = smileStr[i]
