@@ -31,7 +31,6 @@ def identify_core_chain(graph, ringAtoms = []):
 			* Has >= 1 acyclic neighbor
 			* Has >= 1 acylic beta atom
 	"""
-	# FIXME: For now, there is no ring support/recognition.
 	# FIXME: I will have to develop my own heuristics here. Several
 	# needs are listed below. 
 
@@ -60,27 +59,26 @@ def identify_core_chain(graph, ringAtoms = []):
 			continue
 
 		# Must have at least one acyclic neighbor
-		hasAcyclic = False
+		hasNeighborAcyclic = False
 		for n in neighbors:
 			if n not in ringAtoms:
-				hasAcyclic = True
+				hasNeighborAcyclic = True
 				break
 
-		if not hasAcyclic:
+		if not hasNeighborAcyclic:
 			continue
 
 		# Determine if it has an acyclic beta atom
-		# FIXME: At least one beta atom must be acylic
-		hasBeta = False
+		hasBetaAcyclic = False
 		queue = neighbors[:]
 		while len(queue) > 0:
 			at = queue.pop(0)
 			for n in graph.getNeighbors(at):
-				if n != atomNum:
-					hasBeta = True
+				if n != atomNum and n not in ringAtoms:
+					hasBetaAcyclic = True
 					break
 
-		if not hasBeta:
+		if not hasBetaAcyclic:
 			continue
 
 		# Assign as a core chain.
