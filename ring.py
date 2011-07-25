@@ -19,23 +19,34 @@ class RingSystem(object):
 	pass
 
 
-class RingGroup(object):
+class RingGroup(tuple):
 	"""
 	Contains all rings that are connected together.
 	Eg. "PhPh-C-Ph-C-PhPhPh" contains 3 ring groups.
 
-	Useful for saving on computation legwork later: we can restrict
-	searches or traversals to be within the group instead of searching
-	the entire molecule's ring system.
+	As this is a tuple subclass, Pythonic usage should work well:
+
+	>>> r = Ring([1,2,3])
+	>>> group = RingGroup([ring])
+	>>> ring in group
+	True
+
+	RingGroups are useful for saving on computational legwork later: we
+	can restrict searches or traversals to be within the group instead
+	of searching through the entire molecule's ring system.
 	"""
-	# TODO: Give iterator interface, or derive from tuple class.
 
-	def __init__(self, rings, rgId = None):
-		"""
-		Input: a list of Ring objects.
-		"""
-		self.rings = rings
+	def __new__(cls, rings, rgId = None):
+		"""Build tuple subclass instance."""
+		return tuple.__new__(cls, rings)
 
+	def __init__(self, rings, rgId=None):
+		"""
+		Input: 
+		* a list of Ring objects (handled by __new__), and is the
+		  tuple data
+		* an identifier (optional)
+		"""
 		# An arbitrary ID that the grouping algorithm assigns. Should
 		# be unique for every ring group in the molecule, but it is 
 		# not mandatory.
@@ -43,7 +54,7 @@ class RingGroup(object):
 
 	def getRings(self):
 		"""Return a copy of the ring list."""
-		return self.rings[:]
+		return self[:]
 
 	def hasRing(self, ring):
 		"""Returns whether the Ring belongs to the group."""
@@ -52,15 +63,15 @@ class RingGroup(object):
 	def __repr__(self):
 		"""Debug representation."""
 		if self.rgId == None:
-			return "<RingGroup(%d rings)>" % len(self.rings)
-		return "<RingGroup(#%d, %d rings)>" % (self.rgId, len(self.rings))
+			return "<RingGroup(%d rings)>" % len(self)
+		return "<RingGroup(#%d, %d rings)>" % (self.rgId, len(self))
 
 	def __str__(self):
 		"""String representation."""
 		ret = "Ring Group"
 		if self.rgId != None:
 			ret += " (#%d)" % self.rgId
-		for ring in self.rings:
+		for ring in self:
 			ret += "\n  * " + str(ring)
 		return ret
 
