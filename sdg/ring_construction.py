@@ -15,7 +15,9 @@ class Point(object):
 	def __repr__(self):
 		return str(self)
 
-def draw_test(ctx, ptA, ptB, bondLen=100.0, direc='cw', num=5):
+# XXX: 'num' is a hack
+# TODO: Handle cw/ccw direction.
+def draw_test(ctx, ptA, ptB, bondLen=30.0, direc='cw', num=5):
 	# CLEAR
 	pat = SolidPattern(1.0, 1.0, 1.0, 0.9)
 	ctx.rectangle(0,0, 500, 500)
@@ -44,13 +46,42 @@ def draw_test(ctx, ptA, ptB, bondLen=100.0, direc='cw', num=5):
 			ctx.close_path()
 			ctx.stroke()
 
-	size = int(num)
-	d = regular_polygon(size, ptA, ptB, bondLen, direc)
+	def draw_spiral2(positions):
+		"""
+		Draw regular polygons. (WORK IN PROGRESS)
+		Input: A list of each vertex position. 
+		"""
+		# TODO: Must use actual 1st and 2nd positions. 
+		# TODO: Use matrix stacks to translate a local coord system.
+		positions = positions[:]
+
+		# In order to draw edge from last->first
+		positions.append(positions[0])
+
+		first = positions.pop(0)
+		next_ = first
+		last = 0.0
+
+		ctx.set_source_rgb(0.0, 0.0, 0.0)
+		ctx.new_path()
+		while len(positions) > 0:
+			last = next_
+			next_ = positions.pop(0)
+			ctx.move_to(last.x, last.y)
+			ctx.line_to(next_.x, next_.y)
+
+		ctx.close_path()
+		ctx.stroke()
 
 	#draw_line(ptA, ptB)
 	#draw_line(pts['o'], pts['c'])
 
-	draw_spiral(d['o'], size, d['phi'], d['r'])
+	size = int(num)
+	#d = regular_polygon(size, ptA, ptB, bondLen, direc)
+	#draw_spiral(d['o'], size, d['phi'], d['r'])
+
+	positions = regular_polygon(size, ptA, ptB, bondLen, direc)
+	draw_spiral2(positions)
 
 
 def regular_polygon(size, ptA, ptB=None, bondLen=100.0, direc='cw'):
@@ -117,10 +148,15 @@ def regular_polygon(size, ptA, ptB=None, bondLen=100.0, direc='cw'):
 
 	# Calculate the positions of each atom
 	positions = []
+	theta = 0
 	for x in range(size):
-		position = cX
+		px = ptA.x + cos(theta) * r
+		py = ptA.y + sin(theta) * r
+		positions.append(Point(px, py))
+		theta += phi
 
-	return {'o':ptO, 'c': ptC, 'phi': phi, 'r': r}
+	return positions
+	#return {'o':ptO, 'c': ptC, 'phi': phi, 'r': r}
 
 
 def open_polygon():

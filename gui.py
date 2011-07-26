@@ -45,7 +45,7 @@ class Window(object):
 		self.scale = gtk.HScale(adj)
 		self.vbox.add(self.scale)
 
-		poly = gtk.Adjustment(0, 3, 18)
+		poly = gtk.Adjustment(0, 3, 30)
 		spin = gtk.SpinButton(poly)
 		spin.show()
 		self.vbox.add(spin)
@@ -107,6 +107,12 @@ class Window(object):
 
 		if not size:
 			size = 5
+
+		# TODO: Matrix Transform 
+		# Matrix stack: save() restore()
+		#ang = radians(180)
+		#m = Matrix(cos(ang), sin(ang), -sin(ang), cos(ang), 0, 0) # ROT
+		#ctx.transform(m)
 
 		ctx = self.drawable.window.cairo_create()
 		draw_test(ctx, pt1, pt2, num=size)
