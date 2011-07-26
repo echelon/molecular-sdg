@@ -13,13 +13,10 @@ def ring_analysis(rings):
 	remainingRings = []
 	for r in rings:
 		remainingRings.append(Ring(r))
-
 	
+	# TODO: Should this be external? We need to return RingGroups.
 	groups = _segment_into_ring_groups(remainingRings)
-	print groups
-
-	for g in groups:
-		print g
+	print "Ring Groups: %s" % groups
 
 	peelOrder = _assign_ring_types(remainingRings)
 

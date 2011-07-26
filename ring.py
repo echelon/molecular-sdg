@@ -26,10 +26,11 @@ class RingGroup(tuple):
 
 	As this is a tuple subclass, Pythonic usage should work well:
 
-	>>> r = Ring([1,2,3])
-	>>> group = RingGroup([ring])
-	>>> ring in group
+	>>> group = RingGroup([ring1, ring2, ring3], rgId=1)
+	>>> ring2 in group
 	True
+	>>> group[:]
+	(ring1, ring2, ring3)
 
 	RingGroups are useful for saving on computational legwork later: we
 	can restrict searches or traversals to be within the group instead
@@ -51,14 +52,6 @@ class RingGroup(tuple):
 		# be unique for every ring group in the molecule, but it is 
 		# not mandatory.
 		self.rgId = rgId
-
-	def getRings(self):
-		"""Return a copy of the ring list."""
-		return self[:]
-
-	def hasRing(self, ring):
-		"""Returns whether the Ring belongs to the group."""
-		return ring in self.rings
 
 	def __repr__(self):
 		"""Debug representation."""
@@ -135,6 +128,7 @@ class Ring(object):
 		This algorithm is modified from [Helson] in order to compensate
 		for molecules such as PhPh-PhPhPh.
 		"""
+		# TODO: Update to work with RingGroups instead. It'll be much faster.
 		rings = ringList[:]
 		numRings = len(rings)
 
