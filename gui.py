@@ -45,8 +45,8 @@ class Window(object):
 		self.scale = gtk.HScale(adj)
 		self.vbox.add(self.scale)
 
-		poly = gtk.Adjustment(0, 3, 30)
-		spin = gtk.SpinButton(poly)
+		poly = gtk.Adjustment(0, 3, 50, 1, 1, 0)
+		spin = gtk.SpinButton(poly, 1.0, 0)
 		spin.show()
 		self.vbox.add(spin)
 
@@ -95,7 +95,7 @@ class Window(object):
 
 	def drawLines(self, pt1=None, pt2=None, angle=None, size=None):
 
-		L = 100
+		L = 10
 		pt1 = Point(250, 260)
 		pt2 = Point(120, 180+L)
 
@@ -116,5 +116,6 @@ class Window(object):
 
 		ctx = self.drawable.window.cairo_create()
 		draw_test(ctx, pt1, pt2, num=size)
+		#draw_test(ctx, pt1, num=size)
 
 

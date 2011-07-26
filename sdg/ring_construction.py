@@ -17,7 +17,7 @@ class Point(object):
 
 # XXX: 'num' is a hack
 # TODO: Handle cw/ccw direction.
-def draw_test(ctx, ptA, ptB, bondLen=30.0, direc='cw', num=5):
+def draw_test(ctx, ptA, ptB=None, bondLen=30.0, direc='cw', num=5):
 	# CLEAR
 	pat = SolidPattern(1.0, 1.0, 1.0, 0.9)
 	ctx.rectangle(0,0, 500, 500)
@@ -84,9 +84,10 @@ def draw_test(ctx, ptA, ptB, bondLen=30.0, direc='cw', num=5):
 	draw_spiral2(positions)
 
 
+# TODO for regular_polygon: handle cw/ccw. Still not sure how it works.
 def regular_polygon(size, ptA, ptB=None, bondLen=100.0, direc='cw'):
 	"""
-	Calculate the positions for a regular polygon. 
+	Calculate the coordinate positions for a regular polygon.
 
 	Inputs:
 		size - number of atoms in the ring.
@@ -99,41 +100,44 @@ def regular_polygon(size, ptA, ptB=None, bondLen=100.0, direc='cw'):
 	Objectives: 
 		1. Find center point O
 		2. Find angle to first vertex
-		3. Add or subtract phi once per vertex. (Easy).
+		3. Find vertex points by adding or subtracting phi 
+		   once per vertex. (Easy).
+	
+	Returns: A list of Point object coordinates for each vertex.
 	"""
 	if direc != 'cw':
 		direc = 'ccw'
 
-	# TODO
 	# If a second point is not specified, this is probably a core ring,
 	# and we are free to align the ring with the coordinate system. 
+	# TODO: Update to ensure proper cw/ccw handling
 	if ptB == None:
-		if n % 2 == 0:
-			# Even-numbered polygon: set ptB's x to same value. 
-			ptB = (ptA[0], 0) # TODO: Other coord
+		if size % 2 == 0:
+			ptB = Point(ptA.x, ptA.y + bondLen)
 		else: 
-			# Odd-numbered polygon: set ptB's y to same value.
-			ptB = (0, ptA[1]) # TODO: Other coord
+			ptB = Point(ptA.x + bondLen, ptA.y)
 
 	# Discern bond length.
-	# TODO: What to do about bond length input?
+	# FIXME: Kind of inconsistent to recalculate.
 	x = abs(ptA.x - ptB.x)
 	y = abs(ptA.y - ptB.y)
 	L = sqrt(x**2 + y**2) # Bond length
 
-	# Characteristic angle; angle between two vertices
+	# Characteristic angle; the angle between two vertices (from
+	# polygon center 'O'), eg. angle <AOB
 	phi = radians(360.0)/size
 
-	# Distance from center to each vertex, eg O->A
+	# Distance from polygon center 'O' to each vertex, eg. O->A
 	r = L/(2*sin(phi/2))
 
-	# Distance from center to point in center of line AB
-	z = sqrt(r**2 - 0.25*L**2) # Also: z = r*cos(phi/2)
-
-	# Point between A and B
+	# Point between the line joining A and B
 	cX = ptA.x + 0.5*(ptB.x - ptA.x)
 	cY = ptA.y + 0.5*(ptB.y - ptA.y)
 	ptC = Point(cX, cY)
+
+	# Distance from polygon center 'O' to the point in the 
+	# center of line AB, 'C'. ie. O->C
+	z = sqrt(r**2 - 0.25*L**2) # Also: z = r*cos(phi/2)
 
 	# Scaled Perpendicular direction vector from C to O
 	# http://answers.google.com/answers/threadview/id/419874.html
@@ -141,7 +145,7 @@ def regular_polygon(size, ptA, ptB=None, bondLen=100.0, direc='cw'):
 	u = ((ptA.y - ptC.y)/k,
 		(ptC.x - ptA.x)/k)
 
-	# Central point, calculated with direction vector. 
+	# Polygon central point, calculated with the direction vector.
 	oX = ptC.x + z* u[0]
 	oY = ptC.y + z* u[1]
 	ptO = Point(oX, oY)
@@ -156,8 +160,6 @@ def regular_polygon(size, ptA, ptB=None, bondLen=100.0, direc='cw'):
 		theta += phi
 
 	return positions
-	#return {'o':ptO, 'c': ptC, 'phi': phi, 'r': r}
-
 
 def open_polygon():
 	"""
