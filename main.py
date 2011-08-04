@@ -114,7 +114,14 @@ def main():
 
 	# Perception algorithms. 
 	rings = identify_rings(mat)
+
+	print rings
+
 	chains = identify_chains(mat, rings)
+
+	print chains
+
+	sys.exit()
 
 	#print "SMILES: %s\n" % smiles
 	#print "Ring Perception (%d):\n%s\n" % (len(rings), rings)

@@ -26,7 +26,7 @@ def identify_rings(mol):
 	"""
 	Identify the rings in the system with Zamora's SSSR ring perception
 	algorithm. 
-	TODO: Documentation.
+	TODO: Further Documentation.
 	"""
 
 	def zamora_connectivity(mol):
@@ -48,24 +48,25 @@ def identify_rings(mol):
 		}
 
 		# Calculate each atom's connectivity
-		ki = [0 for x in range(mol.numAtoms())]
-		for atom in range(len(ki)):
-			n = len(mol.getNeighbors(atom))
+		ki = [0 for x in range(mol.size)]
+		for atom in range(mol.size):
+			n = len(mol.alphaAtoms[atom])
 			ki[atom] = ki_values[n]
 
 		# Now calculate each atom's neighborhood.
 		# The congestedness of an atom's neighborhood yeilds higher
 		# values for li. 
-		li = [0 for x in range(mol.numAtoms())]
-		for atom in range(len(li)):
+		li = [0 for x in range(mol.size)]
+		for atom in range(mol.size):
 			ksum = 0
-			for neighbor in mol.getNeighbors(atom):
+			for neighbor in mol.alphaAtoms[atom]:
 				ksum += ki[neighbor]
 
 			li[atom] = ksum # Final heuristic score is the sum of ki and li.
+
 		# However, ki is given an additional weight. 
-		ci = [0 for x in range(mol.numAtoms())]
-		for atom in range(len(ci)):
+		ci = [0 for x in range(mol.size)]
+		for atom in range(mol.size):
 			ci[atom] = 64* ki[atom] + li[atom]
 
 		return ci
@@ -74,14 +75,14 @@ def identify_rings(mol):
 		"""
 		Phase One processing takes care of "Type One" ring systems, as
 		well as ring systems that can be reduced to Type One. 
-		TODO: Documentation. 
+		TODO: Documentation.
 		"""
 
 		# Connectivity index for each atom
 		connectivity = zamora_connectivity(mol)
 
 		# List of unused atom labels. (Elements deleted as used.)
-		unusedAtoms = range(mol.numAtoms()) # XXX: May not be best approach.
+		unusedAtoms = range(mol.size) # XXX: May not be best approach.
 
 		rings = []
 		while len(unusedAtoms) > 0:
@@ -107,11 +108,16 @@ def identify_rings(mol):
 				if i not in unusedAtoms:
 					connectivity[i] = -1
 
-
 		return rings
 
 	# TODO: Implement phase two and three.
-	return phase1(mol)
+	rings = phase1(mol)
+
+	# Make constant tuples.
+	for i in range(len(rings)):
+		rings[i] = tuple(rings[i])
+
+	return tuple(rings)
 
 def _find_smallest_ring(mol, first=0, second=None):
 	"""
@@ -141,7 +147,7 @@ def _find_smallest_ring(mol, first=0, second=None):
 
 		def __init__(self, mol):
 			"""CTOR"""
-			sz = mol.numAtoms()
+			sz = mol.size
 
 			self.curAtom = -1	# Current Atom
 			self.pathStack = []	# Current Path (DFS Stack)
@@ -158,14 +164,14 @@ def _find_smallest_ring(mol, first=0, second=None):
 			self.pathStack.append(v)
 			self.inPath[v] = True
 			self.curAtom = v
-			self.neighbors[v] = self._mol.getNeighbors(v)
+			self.neighbors[v] = list(self._mol.alphaAtoms[v])
 
 		def pop(self):
 			"""Pop the atom off the path."""
 			n = self.pathStack.pop()
 			self.inPath[n] = False
 			self.curAtom = self.pathStack[-1]
-			self.neighbors[n] = self._mol.getNeighbors(n) # XXX: Correct?!
+			self.neighbors[n] = list(self._mol.alphaAtoms[n])
 
 		def foundCycle(self, n):
 			"""If n is in the path, we found a cycle."""
@@ -182,7 +188,7 @@ def _find_smallest_ring(mol, first=0, second=None):
 	dfs = RingDFS(mol)
 
 	# Size of the smallest ring found; solution set.
-	smallestRing = mol.numAtoms() + 1
+	smallestRing = mol.size + 1
 	resultSet = []
 
 	# Initialize for ring finding at an atom

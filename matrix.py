@@ -1,4 +1,3 @@
-
 from molecule import Molecule
 from atom import Atom
 
@@ -384,7 +383,7 @@ class ConstMolMatrix(MolMatrix):
 
 		# Build neighbor/neighbor-of-neighbor tables. 
 		self.alphaAtoms = generate_alpha_table(mat.connectMat)
-		self.betaAtoms = generate_beta_table(mat.connectMat)
+		self.betaAtoms = generate_beta_table(self.alphaAtoms)
 
 		# Atom labels (lists)
 		self.types = tuple(mat.atomTypes) # C, O, N, Cl, etc.
@@ -404,40 +403,54 @@ class ConstMolMatrix(MolMatrix):
 		print "Hybridizations: %s" % str(self.hybridizations)
 		print "Degrees: %s" % str(self.degrees)
 
-		#print "AdjMat for %s" % self.smiles
-		# XXX: Won't print >= 100 atoms nicely. Not that I would want
-		# to print out such systems in the terminal...
-		ln = " "*5 if self.size < 10 else " "*6
+		# XXX: Won't print >= 100 atoms nicely. Not that it would be
+		# wise to print out such systems in the terminal...
+		line1 = " "*5 if self.size < 10 else " "*6
+		line2 = " "*5 if self.size < 10 else " "*6
 
-		# Header atoms
+		# Header atoms and header numbers
 		for i in range(self.size):
 			if len(self.types[i]) > 1:
-				ln += self.types[i]
+				line1 += self.types[i]
 			else:
-				ln += "%s " % self.types[i]
-
-		print ln
-		ln = " "*5 if self.size < 10 else " "*6
-
-		# Header numbers
-		for i in range(len(self.connectMat)):
+				line1 += "%s " % self.types[i]
 			if i < 10 or i %2 == 0:
-				ln += "%d " % i
+				line2 += "%d " % i
 			else:
-				ln += " "
-		print ln
+				line2 += " "
 
-		# Graph data
-		for i in range(len(self.connectMat)):
-			atom = self.types[i] # XXX: Can't print 3 char atoms...
+		print line1
+		print line2
+
+		def row_header(i):
+			# FIXME: Can't print systems with > 99 atoms or print 
+			# 3 char atoms... but need for either is very unlikely
+			atom = self.types[i] 
 			if len(atom) < 2:
 				atom += " "
 			if self.size < 10 or i >= 10:
-				ln = "%s %d  " % (atom, i)
-			else:
-				ln = "%s %d   " % (atom, i) 
-			for j in range(len(self.connectMat)):
+				return "%s %d  " % (atom, i)
+			return "%s %d   " % (atom, i) 
+
+		# Graph data
+		for i in range(self.size):
+			ln = row_header(i)
+			for j in range(self.size):
 				ln += str(int(self.bondOrderMat[i][j])) + " " \
 						if self.bondOrderMat[i][j] else ". "
+			print ln
+
+		# Alpha atoms:
+		print "\nAlpha Atoms:"
+		for i in range(self.size):
+			ln = row_header(i)
+			ln += str(self.alphaAtoms[i])
+			print ln
+
+		# Beta atoms:
+		print "\nBeta Atoms:"
+		for i in range(self.size):
+			ln = row_header(i)
+			ln += str(self.betaAtoms[i])
 			print ln
 

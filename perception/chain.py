@@ -17,7 +17,7 @@ class Chain(object):
 		self.caps = [] # There are two end caps. 
 		self.zigzag = [] # Zigzag pattern along the chain from {L,R}. 
 
-def identify_core_chain(graph, ringAtoms = []):
+def identify_core_chain(mol, ringAtoms = []):
 	"""
 	Chain perception information aids in the assembly phase.
 	But since chains are not prefabricated units (PFUs), this 
@@ -25,22 +25,23 @@ def identify_core_chain(graph, ringAtoms = []):
 	congestion, etc).
 
 		Core Chain Atoms:
-			* Acylic (Not partially selected???)
+			* Acylic
 			* Cannot be sp-hybridized
 			* Has >= 2 neighbors
 			* Has >= 1 acyclic neighbor
 			* Has >= 1 acylic beta atom
+			* (Not partially selected ??)
 	"""
 	# FIXME: I will have to develop my own heuristics here. Several
 	# needs are listed below. 
 
 	# Core chain flags. 
-	coreChainFlags = [False for i in range(graph.numAtoms())]
-	types = ['EqAS' for i in range(graph.numAtoms())]
+	coreChainFlags = [False for i in range(mol.size)]
+	types = ['EqAS' for i in range(mol.size)]
 
 	"""Determine which atoms belong to a core chain."""
 
-	for atomNum in range(graph.numAtoms()):
+	for atomNum in range(mol.size):
 		# TODO: What does Helson mean, "not partially selected"? p340
 		# Atom cannot be a ring atom. 
 		if atomNum in ringAtoms:
@@ -48,12 +49,11 @@ def identify_core_chain(graph, ringAtoms = []):
 
 		# Atom cannot be sp-hybridized
 		# FIXME: hybridization error handling. 
-		if graph.getHybridization(atomNum) in ['sp', 'error']:
+		if mol.hybridizations[atomNum] in ['sp', 'error']:
 			continue
 	
-		neighbors = graph.getNeighbors(atomNum)
+		neighbors = mol.alphaAtoms[atomNum]
 
-		# FIXME: Assume neighbors are acyclic 
 		# Must have at least two neighbors
 		if len(neighbors) < 2:
 			continue
@@ -68,15 +68,12 @@ def identify_core_chain(graph, ringAtoms = []):
 		if not hasNeighborAcyclic:
 			continue
 
-		# Determine if it has an acyclic beta atom
+		# Must have at least one acyclic beta atom
 		hasBetaAcyclic = False
-		queue = neighbors[:]
-		while len(queue) > 0:
-			at = queue.pop(0)
-			for n in graph.getNeighbors(at):
-				if n != atomNum and n not in ringAtoms:
-					hasBetaAcyclic = True
-					break
+		for b in mol.betaAtoms[atomNum]:
+			if n not in ringAtoms:
+				hasBetaAcyclic = True
+				break
 
 		if not hasBetaAcyclic:
 			continue
@@ -90,11 +87,11 @@ def identify_core_chain(graph, ringAtoms = []):
 
 	coreChainCopy = coreChainFlags[:]
 
-	for i in range(graph.numAtoms()):
+	for i in range(mol.size):
 		if types[i] == 'EqAS':
 			continue
 
-		neighbors = graph.getNeighbors(i)
+		neighbors = mol.alphaAtoms[i]
 
 		# All Substituents are Heteroatoms
 		# XXX: I made an assumption/modification here.
@@ -106,7 +103,7 @@ def identify_core_chain(graph, ringAtoms = []):
 			if coreChainCopy[n]:
 				alphaNonCore -= 1
 				numCore += 1
-			elif graph.atomTypes[n].upper() not in ['C', 'H']:
+			elif mol.types[n].upper() not in ['C', 'H']:
 				numHetero += 1
 
 		if numHetero > 0 and numHetero >= (alphaNonCore): #- numCore):
@@ -118,7 +115,7 @@ def identify_core_chain(graph, ringAtoms = []):
 		# like this one: CCCCC(CCCC)(CCCC)CCCC. 
 		
 		# Conjestedness heurisic: num beta atoms > 6
-		if len(graph.getBetaAtoms(i)) > 6:
+		if len(mol.betaAtoms[i]) > 6:
 			coreChainFlags[i] = False
 			types[i] = 'EqAS'
 			continue
@@ -128,8 +125,8 @@ def identify_core_chain(graph, ringAtoms = []):
 		# TODO: Consider building and caching a heteroatom list
 		cnt = 0
 		for n in neighbors:
-			if graph.atomTypes[n].upper() not in ['C', 'H'] and \
-					graph.getDegree(n) == 1:
+			if mol.types[n].upper() not in ['C', 'H'] and \
+					mol.degrees[n] == 1:
 						cnt += 1
 		if cnt >= 3:
 			coreChainFlags[i] = False
@@ -139,9 +136,9 @@ def identify_core_chain(graph, ringAtoms = []):
 		# Reclassify if has >= 3 substituents with pi systems (double,
 		# triple bonds).
 		cnt = 0
-		for n in neighbors:
-			if graph.getDegree(n) in ['sp', 'sp2', 'error']:
-				cnt += 1
+		#for n in neighbors:
+		#	if mol.hybridizations[n] in ['sp', 'sp2', 'error']:
+		#		cnt += 1
 		if cnt >= 3:
 			coreChainFlags[i] = False
 			types[i] = 'EqAS'
@@ -152,7 +149,7 @@ def identify_core_chain(graph, ringAtoms = []):
 	#print types
 	return coreChainFlags
 	
-def identify_chains(graph, rings=None):
+def identify_chains(mol, rings=None):
 	"""
 	We need to take core chain and identify the largest contiguous runs.
 	"""
@@ -201,7 +198,7 @@ def identify_chains(graph, rings=None):
 		return maxPath
 
 	# Ring atoms cannot be considered.
-	# TODO: Currently, only a list of lists is supported as ring input.
+	# TODO: Currently, only a lists or tuples is supported as ring input.
 	ringAtoms = []
 	if rings:
 		ratoms = []
@@ -210,11 +207,11 @@ def identify_chains(graph, rings=None):
 		ringAtoms = list(set(ratoms))
 
 	# Find, identify the "core chain" atoms
-	coreFlags = identify_core_chain(graph, ringAtoms)
+	coreFlags = identify_core_chain(mol, ringAtoms)
 
 	# Copy the molecule's connectivity matrix, then specify that all
 	# non-"core chain" atoms are to be removed in the first pass.
-	connectMat = graph.getConnectMat()
+	connectMat = mol.getConnectMat()
 	removeAtoms = get_noncore_vertices(coreFlags)
 
 	# Get all of the chains, starting with the longest. 
@@ -240,3 +237,4 @@ def identify_chains(graph, rings=None):
 		
 
 	return chains
+
