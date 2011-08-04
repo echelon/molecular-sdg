@@ -26,152 +26,12 @@ class MolMatrix(object):
 		self.atomCharges = [0 for x in range(size)]
 		self.atomIsotopes = [0 for x in range(size)]
 
- 		# XXX: These values are cached.
-		self._atomHybridizations = [None for x in range(size)]
-		self._atomDegrees = [None for x in range(size)]
-		self._neighbors = [None for x in range(size)]
-
-		# Cached molecule object.
-		self._molecule = None
-
-	def getMolecule(self):
-		"""
-		Return a more weildy API to the chemical information.
-		If it does not exist, build it.
-		"""
-		if self._molecule:
-			return self._molecule
-
-		mol = Molecule(self)
-
-		# Build atom objects.
-		atoms = [None for i in range(self.size)]
-		for i in range(self.size):
-			atoms[i] = Atom(i, self.atomTypes[i], self.atomCharges[i],
-								self.atomIsotopes[i])
-	
-		# Build neighbors and bond order matrices
-		# Precomputing these will speed later computations
-		for i in range(self.size):
-			for j in range(self.size):
-				if not self.bondOrderMat[i][j]:
-					continue
-				atoms[i].neighbors.append(atoms[j])
-				atoms[i].bondOrderMap[atoms[j]] = self.bondOrderMat[i][j]
-
-		mol.atoms = atoms
-
-		return mol
-
-	def numAtoms(self):
-		"""Reports the number of atoms in the molecule."""
-		# FIXME: Hydrogen exclusion, yet the ability to specify [nH] etc.
-		# makes this inconsistent (and inaccurate--we can't get mol. weight)
-		return self.size
-
-	def getType(self, atomNum):
-		return self.atomTypes[atomNum]
-
-	def getNeighbors(self, atomNum):
-		"""
-		Returns the neighbors for a given atom. (ie. the alpha atoms).
-		This data is gleaned from the connection matrix.
-		"""
-		if self._neighbors[atomNum] != None:
-			return self._neighbors[atomNum][:]
-
-		# TODO: Could cache this...
-		n = []
-		for i in range(self.size):
-			if self.connectMat[atomNum][i]:
-				n.append(i)
-
-		self._neighbors[atomNum] = n[:]
-		return n
-
-	def getBetaAtoms(self, atomNum):
-		"""
-		Returns the beta atoms for a given atom (ie. the neigbors of
-		neighbors). This data is gleaned from the connection matrix.
-		"""
-		# TODO: Could cache this...
-		neighbors = self.getNeighbors(atomNum)
-		beta = []
-		for n in neighbors:
-			for x in self.getNeighbors(n):
-				if x != atomNum and x not in beta:
-					beta.append(x)
-		return beta
-
-	def getHybridization(self, atomNum):
-		"""
-		Get the hybridization state of an atom.
-		This is determined by analyzing the number of pi bond systems
-		from the connection table. 
-
-		Returns one of: {'sp', 'sp2', 'sp3', 'error'}
-		"""
-		# FIXME: Move to a higher level class?
-		# FIXME: Generation and caching strategy could result in errors. 
-
-		def generate():
-			"""Generate Hybridization State for each atom in the 
-			matrix."""
-			hybridizations = {0: 'sp3', 1: 'sp2', 2: 'sp'}
-			for i in range(self.numAtoms()):
-				numPi = 0 # Number of pi systems
-				for n in self.getNeighbors(i):
-					bond = self.bondOrderMat[i][n]
-					if bond >= 2:
-						numPi += bond - 1
-				hybrid = 'error'
-				if numPi in hybridizations:
-					hybrid = hybridizations[numPi]
-
-				self._atomHybridizations[i] = hybrid
-
-		if self._atomHybridizations[0] == None:
-			generate()
-
-		return self._atomHybridizations[atomNum]
-
-	def getDegree(self, atomNum):
-		"""
-		Get the degree of an atom.
-		For carbon, this is the number of other carbons it is directly
-		attached to. For other atoms, it is the degree of the carbon it
-		is attached to.
-		"""
-		# FIXME: Degree of ethers, amides, esters, carbonyls -- ???
-		if self._atomDegrees[atomNum] != None:
-			return self._atomDegrees[atomNum]
-
-		aType = self.atomTypes[atomNum].upper()
-		neighbors = self.getNeighbors(atomNum)
-		deg = 0
-
-		if aType == 'C':
-			# For carbon atoms
-			for n in neighbors:
-				if self.atomTypes[n].upper() == 'C':
-					deg += 1
-		else: 
-			# For non-carbon atoms
-			deg = -1
-			for n in neighbors:
-				# FIXME: Not sure what to do if two carbons, eg. Ether. 
-				if self.atomTypes[n].upper() == 'C':
-					deg = self.getDegree(n)
-					break
-
-		self._atomDegrees[atomNum] = deg
-		return deg
-
 	def getConnectMat(self):
 		"""
 		Build a connection matrix we can use in Floyd's algorithm.
 		'Not connected' is represented by infinity.
 		"""
+		# TODO: Move to module where this is actually used...
 
 		inf = float('Infinity')
 		newMat = [[inf for x in range(self.size)] for xx in range(self.size)]
@@ -185,9 +45,9 @@ class MolMatrix(object):
 		return newMat
 
 	def print_matrix(self):
-		"""Print the matrix. Debug."""
-		print "TODO: Print Smiles Label, but from different module."
-
+		"""
+		Print the molecular data for debugging.
+		"""
 		print "Types: %s" % str(self.atomTypes)
 		print "Charges: %s" % str(self.atomCharges)
 		print "Isotopes: %s" % str(self.atomIsotopes)
@@ -365,6 +225,7 @@ class MolMatrix(object):
 			mapGraphs(newMat.connectMat, self.connectMat)
 			mapGraphs(newMat.bondOrderMat, self.bondOrderMat)
 
+
 		def map_atom(newMat, newPos, oldPos):
 			"""
 			Transfer the atom type, charge, isotope, etc. data to its 
@@ -390,4 +251,193 @@ class MolMatrix(object):
 							newNbrPos, oldNbrPos)
 
 		return newMolMat
+
+class ConstMolMatrix(MolMatrix):
+
+	def __init__(self, mat):
+		"""
+		Build a constant molecular matrix from its predecessor.
+		Once we've built the matrix, there is no reason we should
+		modify it.
+		"""
+
+		def immutable(table):
+			"""Convert a list-based matrix or connection table into an
+			immutable tuple of tuples."""
+			if not table:
+				return ()
+			table = table[:]
+			for i in range(len(table)):
+				if type(table[i]) == str:
+					continue
+				table[i] = tuple(table[i])
+			return tuple(table)
+
+		def make_immutable(func):
+			"""Function decorator version."""
+			def wrap(arg1, arg2=None):
+				if arg2:
+					return immutable(func(arg1, arg2))
+				return immutable(func(arg1))
+			return wrap
+
+		@make_immutable
+		def generate_alpha_table(mat):
+			"""Compute the alpha (direct neighbor) connection table 
+			upfront from the connection matrix."""
+			sz = len(mat)
+			table = [[] for x in range(sz)]
+			for i in range(sz):
+				for j in range(sz):
+					if i == j:
+						continue
+					if mat[i][j]:
+						table[i].append(j)
+			return table
+
+		@make_immutable
+		def generate_beta_table(alpha):
+			"""Compute the beta (neighbor of neighbor) connection table
+			upfront from the alpha table."""
+			sz = len(alpha)
+			table = [[] for x in range(sz)]
+			for i in range(sz):
+				for j in alpha[i]:
+					for k in alpha[j]:
+						if k == i:
+							continue
+						table[i].append(k)
+			return table
+
+		def compute_hybridizations(bondOrderMat, neighborTable):
+			"""
+			Generate Hybridization State for each atom.
+			This is determined by analyzing the number of pi bond
+			systems from the connection table. 
+
+			Each atom is one of: {'sp', 'sp2', 'sp3', 'error'}
+			"""
+			HYBRID_VALUES = {0: 'sp3', 1: 'sp2', 2: 'sp'}
+
+			sz = len(bondOrderMat)
+			hybrids = ['error' for x in range(sz)]
+			for i in range(sz):
+				numPi = 0 # Number of pi systems
+				for n in neighborTable[i]:
+					bond = bondOrderMat[i][n]
+					if bond >= 2:
+						numPi += bond - 1
+				if numPi in HYBRID_VALUES:
+					hybrids[i] = HYBRID_VALUES[numPi]
+
+			return tuple(hybrids)
+
+		def compute_degrees(atomTypes, neighborTable):
+			"""
+			Compute the atom degrees. For carbon, this is the number of
+			other carbons it is directly attached to. For other atoms,
+			it is the degree of the carbon it is attached to.
+			"""
+			# FIXME: Degree of ethers, amides, esters, carbonyls?
+			# Granted these are 'functional groups' and not lone atoms. 
+			def carbon_degree(atom):
+				deg = 0
+				for n in neighborTable[atom]:
+					if atomTypes[n].upper() == 'C':
+						deg += 1
+				return deg
+
+			sz = len(atomTypes)
+			degrees = [-1 for x in range(sz)]
+			for i in range(sz):
+				aType = atomTypes[i].upper()
+				deg = 0
+				if aType == 'C':
+					deg = carbon_degree(i)
+				else: 
+					# Calculate degree for non-carbon atoms
+					deg = -1
+					for n in neighborTable[i]:
+						# FIXME: Not sure what to do if two carbons, 
+						# eg. the Oxygen in 'COC'. For now, just use 
+						# the first carbon.
+						if atomTypes[n].upper() == 'C':
+							deg = carbon_degree(n) # FIXME: Redundant
+							break
+				degrees[i] = deg
+			return tuple(degrees)
+
+		"""
+		CLASS MEMBERS
+			All matrices, connection tables, and label lists are are
+			immutable tuples.
+		"""
+
+		# Number of atoms.
+		self.size = mat.size
+
+		# Connectivity matrix 
+		self.connectMat = immutable(mat.connectMat)
+
+		# Bond orders between atom pairs: 1, 1.5 (aromatic), 2, and 3
+		self.bondOrderMat = immutable(mat.bondOrderMat)
+
+		# Build neighbor/neighbor-of-neighbor tables. 
+		self.alphaAtoms = generate_alpha_table(mat.connectMat)
+		self.betaAtoms = generate_beta_table(mat.connectMat)
+
+		# Atom labels (lists)
+		self.types = tuple(mat.atomTypes) # C, O, N, Cl, etc.
+		self.charges = tuple(mat.atomCharges)
+		self.isotopes = tuple(mat.atomIsotopes)
+		self.degrees = compute_degrees(mat.atomTypes, self.alphaAtoms)
+		self.hybridizations = compute_hybridizations(mat.bondOrderMat, 
+								self.alphaAtoms) # sp, sp2, sp3, or 'error'
+
+	def print_matrix(self):
+		"""
+		Print the molecular data for debugging.
+		"""
+		print "Types: %s" % str(self.types)
+		print "Charges: %s" % str(self.charges)
+		print "Isotopes: %s" % str(self.isotopes)
+		print "Hybridizations: %s" % str(self.hybridizations)
+		print "Degrees: %s" % str(self.degrees)
+
+		#print "AdjMat for %s" % self.smiles
+		# XXX: Won't print >= 100 atoms nicely. Not that I would want
+		# to print out such systems in the terminal...
+		ln = " "*5 if self.size < 10 else " "*6
+
+		# Header atoms
+		for i in range(self.size):
+			if len(self.types[i]) > 1:
+				ln += self.types[i]
+			else:
+				ln += "%s " % self.types[i]
+
+		print ln
+		ln = " "*5 if self.size < 10 else " "*6
+
+		# Header numbers
+		for i in range(len(self.connectMat)):
+			if i < 10 or i %2 == 0:
+				ln += "%d " % i
+			else:
+				ln += " "
+		print ln
+
+		# Graph data
+		for i in range(len(self.connectMat)):
+			atom = self.types[i] # XXX: Can't print 3 char atoms...
+			if len(atom) < 2:
+				atom += " "
+			if self.size < 10 or i >= 10:
+				ln = "%s %d  " % (atom, i)
+			else:
+				ln = "%s %d   " % (atom, i) 
+			for j in range(len(self.connectMat)):
+				ln += str(int(self.bondOrderMat[i][j])) + " " \
+						if self.bondOrderMat[i][j] else ". "
+			print ln
 

@@ -14,7 +14,7 @@ import sys
 import random
 
 # Project
-from matrix import MolMatrix
+from matrix import MolMatrix, ConstMolMatrix
 from smiles import Smiles
 from smiles import smiles_to_matrix
 from util.matrix import print_matrix
@@ -108,24 +108,11 @@ def main():
 			smiles = sys.argv[1]
 
 	mat = smiles_to_matrix(smiles)
-	mol = mat.getMolecule()
 
-	print mol.atoms
+	mat = ConstMolMatrix(mat)
+	mat.print_matrix()
 
-	# XXX: Testing...
-	#print "Chain Perception: \n"
-	#identify_chains(mat)
-	#print smilesA
-
-	"""print "Num atoms; %d" % mat.numAtoms()
-	for i in range(mat.numAtoms()):
-		j = (i + 1) % mat.numAtoms()
-		r = find_smallest_ring(mat, i, j)
-		print "(%d, %d)  =  %s" % (i, j, str(r))
-	"""
-
-	#print find_smallest_ring(mat, mat.numAtoms()-1)
-
+	# Perception algorithms. 
 	rings = identify_rings(mat)
 	chains = identify_chains(mat, rings)
 
@@ -133,8 +120,9 @@ def main():
 	#print "Ring Perception (%d):\n%s\n" % (len(rings), rings)
 	#print "\nChain Perception (%d):\n%s\n" % (len(chains), chains)
 
-	peelOrder = ring_analysis(rings, mol)	
+	#peelOrder = ring_analysis(rings, mol)	
 
+	# TODO: Remove 'Molecule' 
 	#print "\n\nRing Peel Order:"
 	#for x in peelOrder:
 	#	print x
