@@ -3,16 +3,19 @@ Ring analysis.
 This code is adapted from [Helson].
 """
 
-from ring import *
+from ring import Ring, RingGroup, RING_TYPES
 
-def ring_analysis(rings):
+def ring_analysis(rings, mol):
 	"""
 	Perform ring analysis using the ring peeling technique.
 	This is a two-stage algorithm adapted from [Helson].
 	"""
 	remainingRings = []
 	for r in rings:
-		remainingRings.append(Ring(r))
+		remainingRings.append(Ring(r, mol))
+
+	for a in remainingRings[0].ringPath:
+		print a
 	
 	# TODO: Should this be external? We need to return RingGroups.
 	groups = _segment_into_ring_groups(remainingRings)
@@ -21,6 +24,11 @@ def ring_analysis(rings):
 	peelOrder = _assign_ring_types(remainingRings)
 
 	# TODO: Repeat again with license for bridged systems. 
+
+	mol.rings = remainingRings
+	mol.ringGroups = groups
+
+	# TODO: mol also needs peel order. 
 
 	return peelOrder
 

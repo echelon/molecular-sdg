@@ -3,6 +3,7 @@ Ring-related data structures.
 """
 
 from util.enum import enum
+from atom import Atom
 
 RING_TYPES = enum(
 	'CORE', 		# Last remaining ring (tractable case)
@@ -17,7 +18,6 @@ class RingSystem(object):
 	Contains all of the rings in the molecule.
 	"""
 	pass
-
 
 class RingGroup(tuple):
 	"""
@@ -76,7 +76,7 @@ class Ring(object):
 	"""
 	# FIXME: Remove most of the methods. They belong in analysis only!
 
-	def __init__(self, path):
+	def __init__(self, path, mol):
 		"""
 		Ring Constructor
 		Must specify the atom cycle that constitutes the ring.
@@ -102,6 +102,15 @@ class Ring(object):
 			newPath = path[:]
 			if newPath[0] == newPath[-1]:
 				newPath.pop()
+
+			# If this is a list of MolMatrix indices rather than Atom
+			# instances, convert!
+			if not isinstance(newPath[0], Atom):
+				atomPath = []
+				for x in newPath:
+					atomPath.append(mol.atoms[x])
+				newPath = atomPath
+
 			return newPath
 
 		def build_bonds(path):
@@ -117,6 +126,10 @@ class Ring(object):
 		# Build.
 		self.ringPath = build_path(path)
 		self.bonds = build_bonds(self.ringPath)
+
+		# Notify atoms of ring membership.
+		for atom in self.ringPath:
+			atom.rings.append(self)
 
 	def isCentralRing(self, ringList):
 		"""

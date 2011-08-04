@@ -107,30 +107,33 @@ def main():
 		else:
 			smiles = sys.argv[1]
 
-	mol = smiles_to_matrix(smiles)
+	mat = smiles_to_matrix(smiles)
+	mol = mat.getMolecule()
+
+	print mol.atoms
 
 	# XXX: Testing...
 	#print "Chain Perception: \n"
-	#identify_chains(mol)
+	#identify_chains(mat)
 	#print smilesA
 
-	"""print "Num atoms; %d" % mol.numAtoms()
-	for i in range(mol.numAtoms()):
-		j = (i + 1) % mol.numAtoms()
-		r = find_smallest_ring(mol, i, j)
+	"""print "Num atoms; %d" % mat.numAtoms()
+	for i in range(mat.numAtoms()):
+		j = (i + 1) % mat.numAtoms()
+		r = find_smallest_ring(mat, i, j)
 		print "(%d, %d)  =  %s" % (i, j, str(r))
 	"""
 
-	#print find_smallest_ring(mol, mol.numAtoms()-1)
+	#print find_smallest_ring(mat, mat.numAtoms()-1)
 
-	rings = identify_rings(mol)
-	chains = identify_chains(mol, rings)
+	rings = identify_rings(mat)
+	chains = identify_chains(mat, rings)
 
 	#print "SMILES: %s\n" % smiles
 	#print "Ring Perception (%d):\n%s\n" % (len(rings), rings)
 	#print "\nChain Perception (%d):\n%s\n" % (len(chains), chains)
 
-	peelOrder = ring_analysis(rings)	
+	peelOrder = ring_analysis(rings, mol)	
 
 	#print "\n\nRing Peel Order:"
 	#for x in peelOrder:

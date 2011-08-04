@@ -18,7 +18,102 @@ Chemical Graphs", J. Chem. Inf. Comput. Sci., vol 29 (1989).
 Problem", J. Chem. Inf. Comput. Sci., vol 34 (1994).
 """
 
-def find_smallest_ring(mol, first=0, second=None):
+# TODO: Implement phase 1 heuristics
+# TODO: Implement phase 2
+# TODO: Implement phase 3
+
+def identify_rings(mol):
+	"""
+	Identify the rings in the system with Zamora's SSSR ring perception
+	algorithm. 
+	TODO: Documentation.
+	"""
+
+	def zamora_connectivity(mol):
+		"""
+		Zamora defines a connectivity index for each atom in a 
+		molecular graph. This numerical index determines how crowded or
+		connected each atom is, allowing us to start later processing
+		with more central atoms. 
+		"""
+		# Mapping of number of neighbors to connectivity values
+		# This is a huristic value assigned to each atom.
+		# TODO: Valency > 4 is not handled by Zamora
+		ki_values = {
+			0: 0,
+			1: 0,
+			2: 1,
+			3: 8,
+			4: 64,
+		}
+
+		# Calculate each atom's connectivity
+		ki = [0 for x in range(mol.numAtoms())]
+		for atom in range(len(ki)):
+			n = len(mol.getNeighbors(atom))
+			ki[atom] = ki_values[n]
+
+		# Now calculate each atom's neighborhood.
+		# The congestedness of an atom's neighborhood yeilds higher
+		# values for li. 
+		li = [0 for x in range(mol.numAtoms())]
+		for atom in range(len(li)):
+			ksum = 0
+			for neighbor in mol.getNeighbors(atom):
+				ksum += ki[neighbor]
+
+			li[atom] = ksum # Final heuristic score is the sum of ki and li.
+		# However, ki is given an additional weight. 
+		ci = [0 for x in range(mol.numAtoms())]
+		for atom in range(len(ci)):
+			ci[atom] = 64* ki[atom] + li[atom]
+
+		return ci
+
+	def phase1(mol):
+		"""
+		Phase One processing takes care of "Type One" ring systems, as
+		well as ring systems that can be reduced to Type One. 
+		TODO: Documentation. 
+		"""
+
+		# Connectivity index for each atom
+		connectivity = zamora_connectivity(mol)
+
+		# List of unused atom labels. (Elements deleted as used.)
+		unusedAtoms = range(mol.numAtoms()) # XXX: May not be best approach.
+
+		rings = []
+		while len(unusedAtoms) > 0:
+			# Find the unused atom with the highest connectivity, then the 
+			# smallest (and best) ring that contains it. 
+			# TODO/FIXME/XXX: Absolutely need to implement Zamora's heuristics
+			startAtom = connectivity.index(max(connectivity))
+			ring = _find_smallest_ring(mol, startAtom)
+
+			if len(ring) < 1:
+				# Atom is not in a ring system. 
+				unusedAtoms.remove(startAtom)
+				connectivity[startAtom] = -1
+				continue
+
+			rings.append(ring)
+
+			# Remove used atoms.
+			unusedAtoms = filter(lambda x: x not in ring, unusedAtoms)
+
+			# Negate connectivity for used atoms. 
+			for i in range(len(connectivity)):
+				if i not in unusedAtoms:
+					connectivity[i] = -1
+
+
+		return rings
+
+	# TODO: Implement phase two and three.
+	return phase1(mol)
+
+def _find_smallest_ring(mol, first=0, second=None):
 	"""
 	Find the smallest ring containing the atom 'first', or to find the
 	smallest ring containing an edge, specify both 'first' and 'second'
@@ -146,101 +241,4 @@ def find_smallest_ring(mol, first=0, second=None):
 					return resultSet
 
 			continue
-
-# TODO: Implement phase 1 heuristics
-# TODO: Implement phase 2
-# TODO: Implement phase 3
-
-def identify_rings(mol):
-	"""
-	Identify the rings in the system with Zamora's SSSR ring perception
-	algorithm. 
-	TODO: Documentation.
-	"""
-
-	def zamora_connectivity(mol):
-		"""
-		Zamora defines a connectivity index for each atom in a 
-		molecular graph. This numerical index determines how crowded or
-		connected each atom is, allowing us to start later processing
-		with more central atoms. 
-		"""
-		# Mapping of number of neighbors to connectivity values
-		# This is a huristic value assigned to each atom.
-		# TODO: Valency > 4 is not handled by Zamora
-		ki_values = {
-			0: 0,
-			1: 0,
-			2: 1,
-			3: 8,
-			4: 64,
-		}
-
-		# Calculate each atom's connectivity
-		ki = [0 for x in range(mol.numAtoms())]
-		for atom in range(len(ki)):
-			n = len(mol.getNeighbors(atom))
-			ki[atom] = ki_values[n]
-
-		# Now calculate each atom's neighborhood.
-		# The congestedness of an atom's neighborhood yeilds higher
-		# values for li. 
-		li = [0 for x in range(mol.numAtoms())]
-		for atom in range(len(li)):
-			ksum = 0
-			for neighbor in mol.getNeighbors(atom):
-				ksum += ki[neighbor]
-
-			li[atom] = ksum
-
-		# Final heuristic score is the sum of ki and li.
-		# However, ki is given an additional weight. 
-		ci = [0 for x in range(mol.numAtoms())]
-		for atom in range(len(ci)):
-			ci[atom] = 64* ki[atom] + li[atom]
-
-		return ci
-
-	def phase1(mol):
-		"""
-		Phase One processing takes care of "Type One" ring systems, as
-		well as ring systems that can be reduced to Type One. 
-		TODO: Documentation. 
-		"""
-
-		# Connectivity index for each atom
-		connectivity = zamora_connectivity(mol)
-
-		# List of unused atom labels. (Elements deleted as used.)
-		unusedAtoms = range(mol.numAtoms()) # XXX: May not be best approach.
-
-		rings = []
-		while len(unusedAtoms) > 0:
-			# Find the unused atom with the highest connectivity, then the 
-			# smallest (and best) ring that contains it. 
-			# TODO/FIXME/XXX: Absolutely need to implement Zamora's heuristics
-			startAtom = connectivity.index(max(connectivity))
-			ring = find_smallest_ring(mol, startAtom)
-
-			if len(ring) < 1:
-				# Atom is not in a ring system. 
-				unusedAtoms.remove(startAtom)
-				connectivity[startAtom] = -1
-				continue
-
-			rings.append(ring)
-
-			# Remove used atoms.
-			unusedAtoms = filter(lambda x: x not in ring, unusedAtoms)
-
-			# Negate connectivity for used atoms. 
-			for i in range(len(connectivity)):
-				if i not in unusedAtoms:
-					connectivity[i] = -1
-
-
-		return rings
-
-	# TODO: Implement phase two and three.
-	return phase1(mol)
 

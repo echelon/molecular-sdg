@@ -1,4 +1,7 @@
 
+from molecule import Molecule
+from atom import Atom
+
 class MolMatrix(object):
 	"""Adjacency Matrix for molecules."""
 
@@ -27,6 +30,38 @@ class MolMatrix(object):
 		self._atomHybridizations = [None for x in range(size)]
 		self._atomDegrees = [None for x in range(size)]
 		self._neighbors = [None for x in range(size)]
+
+		# Cached molecule object.
+		self._molecule = None
+
+	def getMolecule(self):
+		"""
+		Return a more weildy API to the chemical information.
+		If it does not exist, build it.
+		"""
+		if self._molecule:
+			return self._molecule
+
+		mol = Molecule(self)
+
+		# Build atom objects.
+		atoms = [None for i in range(self.size)]
+		for i in range(self.size):
+			atoms[i] = Atom(i, self.atomTypes[i], self.atomCharges[i],
+								self.atomIsotopes[i])
+	
+		# Build neighbors and bond order matrices
+		# Precomputing these will speed later computations
+		for i in range(self.size):
+			for j in range(self.size):
+				if not self.bondOrderMat[i][j]:
+					continue
+				atoms[i].neighbors.append(atoms[j])
+				atoms[i].bondOrderMap[atoms[j]] = self.bondOrderMat[i][j]
+
+		mol.atoms = atoms
+
+		return mol
 
 	def numAtoms(self):
 		"""Reports the number of atoms in the molecule."""
