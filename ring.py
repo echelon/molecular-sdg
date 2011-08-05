@@ -83,7 +83,7 @@ class Ring(tuple):
 		for molecules such as PhPh-PhPhPh.
 		"""
 		# TODO: Update to work with RingGroups instead. It'll be much faster.
-		rings = ringList[:]
+		rings = list(ringList[:])
 		numRings = len(rings)
 
 		# Remove our ring from the system

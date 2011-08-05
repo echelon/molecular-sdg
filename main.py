@@ -113,20 +113,17 @@ def main():
 
 	# Perception algorithms. 
 	rings = identify_rings(mol)
+	chains = identify_chains(mol, rings)
 
 	print "\nRing Perception:"
 	print rings
-
-	sys.exit()
-
-	chains = identify_chains(mol, rings)
-
-	#print "SMILES: %s\n" % smiles
-	#print "Ring Perception (%d):\n%s\n" % (len(rings), rings)
-	#print "\nChain Perception (%d):\n%s\n" % (len(chains), chains)
+	print "\nChain Perception:"
+	print chains
 
 	# Ring analysis
 	peelOrder = ring_analysis(rings, mol)	
+
+	print peelOrder
 
 	sys.exit()
 

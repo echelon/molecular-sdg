@@ -10,13 +10,8 @@ def ring_analysis(rings, mol):
 	Perform ring analysis using the ring peeling technique.
 	This is a two-stage algorithm adapted from [Helson].
 	"""
-	remainingRings = []
-	for r in rings:
-		remainingRings.append(Ring(r, mol))
+	remainingRings = rings[:]
 
-	for a in remainingRings[0].ringPath:
-		print a
-	
 	# TODO: Should this be external? We need to return RingGroups.
 	groups = _segment_into_ring_groups(remainingRings)
 	print "Ring Groups: %s" % groups
@@ -60,7 +55,7 @@ def _segment_into_ring_groups(ringList):
 		# same connectivity group. This is similar to [Helson]'s 
 		# "central" test algorithm (Procedure D of Ring Analysis, 
 		# p. 334)
-		rings = ringList[:]
+		rings = list(ringList[:])
 		rings.pop(rings.index(ring1))
 
 		collected = [ring1]
@@ -84,7 +79,7 @@ def _segment_into_ring_groups(ringList):
 
 	# More than one ring in molecule -- must group memberships.
 	groups = []
-	ungrouped = ringList[:]
+	ungrouped = list(ringList[:])
 	justGrouped = []
 	rId = 0
 
@@ -204,7 +199,7 @@ def _assign_ring_types(remainingRings):
 	Analyze and Peel Rings from the Ring System(s).
 	"""
 
-	remainingRings = remainingRings[:]
+	remainingRings = list(remainingRings[:])
 	peelOrder = []
 
 	while True:

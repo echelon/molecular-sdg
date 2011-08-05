@@ -154,6 +154,20 @@ def identify_chains(mol, rings=None):
 	We need to take core chain and identify the largest contiguous runs.
 	"""
 	
+	def build_connect_mat(mol):
+		"""
+		Build a connection matrix we can use in Floyd's algorithm.
+		'Not connected' is represented by infinity.
+		"""
+		inf = float('Infinity')
+		newMat = [[inf for x in range(mol.size)] for y in range(mol.size)]
+		for i in range(mol.size):
+			for j in range(mol.size):
+				val = mol.connectMat[i][j]
+				val = inf if not val else 1
+				newMat[i][j] = val
+		return newMat
+
 	def get_core_vertices(coreFlags):
 		"""Get a list of core vertices from core chain flags."""
 		core = []
@@ -211,7 +225,7 @@ def identify_chains(mol, rings=None):
 
 	# Copy the molecule's connectivity matrix, then specify that all
 	# non-"core chain" atoms are to be removed in the first pass.
-	connectMat = mol.getConnectMat()
+	connectMat = build_connect_mat(mol)
 	removeAtoms = get_noncore_vertices(coreFlags)
 
 	# Get all of the chains, starting with the longest. 

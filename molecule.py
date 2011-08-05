@@ -1,7 +1,12 @@
 """
-
+TODO: Doc.
 """
 
+# TODO: Add a __key__ check for assignment
+# 		Any invalid keys should not support assignment!
+#
+# TODO: Add a molecular weight generator. This entails calculating the
+#		number of hydrogens. We'll need an 'atoms' dictionary with data.
 class Molecule(object):
 	"""
 	TODO: Docs.
@@ -189,6 +194,28 @@ class Molecule(object):
 
 		self.smiles = smiles
 
+	def __setattr__(self, k, v):
+		"""Limit the ability to manage the object's dictionary."""
+		valid = ('size',
+				'connectMat',
+				'bondOrderMat',
+				'types',
+				'charges',
+				'isotopes',
+				'degrees',
+				'hybridizations',
+				'alphaAtoms',
+				'betaAtoms',
+				'ringSystem',
+				'smiles'
+		)
+		#if k not in valid:
+		#	raise Exception("Cannot set as `%s`, invalid key." % k)
+		if k in self.__dict__ and self.__dict__[k]:
+			raise Exception("Cannot reset `%s`." %k)
+
+		self.__dict__[k] = v
+
 	def print_matrix(self):
 		"""
 		Print the molecular data for debugging.
@@ -256,3 +283,4 @@ class Molecule(object):
 
 		if self.smiles:
 			print "\n===== End report for: %s =====" % self.smiles
+
