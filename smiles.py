@@ -1,5 +1,5 @@
-from matrix import *
 import string
+from molecule import Molecule
 
 # TODO: Reorganize class
 # TODO: Fix documentation 
@@ -193,7 +193,7 @@ class Smiles(object):
 
 		return tokens 
 
-	def toMatrix(self):
+	def toMolecule(self):
 		"""Convert a SMILES string into a adjacency matrix representation."""
 
 		# First, we must convert the input string into a proper queue
@@ -209,7 +209,16 @@ class Smiles(object):
 		CHARGE = '+-'    # Cation/anion charge. Only occur in brackets.
 
 		queue = self.tokens
-		mat = MolMatrix(self.numAtoms())
+		sz = self.numAtoms()
+
+		# Output data	
+		data = {
+			'connectMat': [[False for x in range(sz)] for y in range(sz)],
+			'bondOrderMat': [[False for x in range(sz)] for y in range(sz)],
+			'types': [None for x in range(sz)],
+			'charges': [0 for x in range(sz)],
+			'isotopes': [0 for x in range(sz)],
+		}
 
 		# Symbol type tests
 		#def is_atom(sym): return sym.upper() in ATOMS_UPPER
@@ -221,15 +230,15 @@ class Smiles(object):
 
 		# Make note of the connection beween two atoms. 
 		def connect(a1, a2, bondOrder=1):
-			mat.connectMat[a1][a2] = True
-			mat.connectMat[a2][a1] = True
-			mat.bondOrderMat[a1][a2] = bondOrder
-			mat.bondOrderMat[a2][a1] = bondOrder
+			data['connectMat'][a1][a2] = True
+			data['connectMat'][a2][a1] = True
+			data['bondOrderMat'][a1][a2] = bondOrder
+			data['bondOrderMat'][a2][a1] = bondOrder
 
 		# Label the atom type
 		def label(a, name, isotope = 0):
-			mat.atomTypes[a] = name
-			mat.atomIsotopes[a] = isotope
+			data['types'][a] = name
+			data['isotopes'][a] = isotope
 
 		# Parse the charge. Examples: +, --, 2+, -3
 		# TODO: Make more compact, and more valid to spec.
@@ -326,17 +335,19 @@ class Smiles(object):
 			if is_charge(sym) and inBrackets:
 				# The '-' symbol is also used for a few limited cases
 				# of single bond representation. 
-				mat.atomCharges[atomId] = parse_charge(sym)
+				data['charges'][atomId] = parse_charge(sym)
 				continue
 
 			# Isotope can only be set in brackets, before the atom.
 			if sym.isdigit() and inBrackets and not inBracketsAtomFound:
 				isotope = sym
 
-		# End queue processing, return matrix.
-		return mat
+		# End queue processing, build and return Molecule object.
+		return Molecule(data['types'], data['bondOrderMat'],
+					connectMat=data['connectMat'], charges=data['charges'],
+					isotopes=data['isotopes'], smiles=self)
 
-def smiles_to_matrix(smiles):
+def smiles_to_molecule(smiles):
 	"""Function to return a MolMatrix from a smiles string without an
 	intermediate."""
 	# XXX: Do I really need to keep this?
@@ -344,9 +355,9 @@ def smiles_to_matrix(smiles):
 	if type(smiles) == str:
 		smiles = Smiles(smiles)
 
-	return smiles.toMatrix()
+	return smiles.toMolecule()
 
-def matrix_to_smiles(matrix):
+def molecule_to_smiles(matrix):
 	# TODO: Need to convert back into a smiles expression.
 	pass
 

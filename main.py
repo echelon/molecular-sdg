@@ -14,9 +14,9 @@ import sys
 import random
 
 # Project
-from matrix import MolMatrix, ConstMolMatrix
+from molecule import Molecule
 from smiles import Smiles
-from smiles import smiles_to_matrix
+from smiles import smiles_to_molecule
 from util.matrix import print_matrix
 from algo.path import *
 from perception.rings import *
@@ -107,9 +107,8 @@ def main():
 		else:
 			smiles = sys.argv[1]
 
-	mol = smiles_to_matrix(smiles)
+	mol = smiles_to_molecule(smiles)
 
-	mol = ConstMolMatrix(mol)
 	mol.print_matrix()
 
 	# Perception algorithms. 
