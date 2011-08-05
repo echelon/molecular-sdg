@@ -56,8 +56,9 @@ class Molecule(object):
 		# Ring system
 		self.ringSystem = None
 
-		# Smiles text
+		# Smiles text, etc.
 		self.smiles = None
+		self.informalName = None
 
 		"""
 		=== Processing Functions === 
@@ -207,7 +208,8 @@ class Molecule(object):
 				'alphaAtoms',
 				'betaAtoms',
 				'ringSystem',
-				'smiles'
+				'smiles',
+				'informalName',
 		)
 		#if k not in valid:
 		#	raise Exception("Cannot set as `%s`, invalid key." % k)
@@ -220,8 +222,10 @@ class Molecule(object):
 		"""
 		Print the molecular data for debugging.
 		"""
-		if self.smiles:
-			print "===== Report for: %s =====\n" % self.smiles
+		print "====== Begin Report ======\n"
+		print "Name: %s" % str(self.informalName)
+		print "Smiles: %s" % str(self.smiles)
+		print ""
 
 		print "Types: %s" % str(self.types)
 		print "Charges: %s" % str(self.charges)
@@ -259,7 +263,7 @@ class Molecule(object):
 				return "%s %d  " % (atom, i)
 			return "%s %d   " % (atom, i) 
 
-		# Graph data
+		# Bond Order Graph data
 		for i in range(self.size):
 			ln = row_header(i)
 			for j in range(self.size):
@@ -267,20 +271,29 @@ class Molecule(object):
 						if self.bondOrderMat[i][j] else ". "
 			print ln
 
-		# Alpha atoms:
-		print "\nAlpha Atoms:"
+		# Lots of information 
+		print "\nLabel; Hybridization; Degree; Alpha and Beta Atoms:"
 		for i in range(self.size):
 			ln = row_header(i)
-			ln += str(self.alphaAtoms[i])
-			print ln
+			hybrid = str(self.hybridizations[i])
+			hybrid = hybrid if hybrid != "error" else "err"
+			hybrid += "  " if len(hybrid) == 3 else "   "
+			degree = str(self.degrees[i])
+			degree += "  " if len(degree) == 1 else " "
+			ln += hybrid + degree
 
-		# Beta atoms:
-		print "\nBeta Atoms:"
-		for i in range(self.size):
-			ln = row_header(i)
+			ln += str(self.alphaAtoms[i])
+			# FIXME: This only prints well in my Bash configuration AFAIK
+			if len(ln) < 24:
+				ln += "\t\t"
+			else:
+				ln += "\t"
 			ln += str(self.betaAtoms[i])
 			print ln
 
-		if self.smiles:
-			print "\n===== End report for: %s =====" % self.smiles
+		print ""
+		print "Informal Name: %s" % str(self.informalName)
+		print "Smiles: %s" % str(self.smiles)
+		print "\n====== End Report ======"
+
 

@@ -94,20 +94,24 @@ def main():
 	"""Main function"""
 
 	smiles = None
+	name = None
 	if len(sys.argv) < 2:
 		ex = get_example()
+		name = ex[0]
+		smiles = ex[1]
 		print ">>> Need to supply SMILES text as argument."
 		print ">>> Using %s \"%s\" as an example.\n" % ex 
-		smiles = ex[1]
 	else:
 		ex = get_example(sys.argv[1])
 		if ex:
-			print ">>> Using %s per argument.\n" % ex[0] 
+			name = ex[0]
 			smiles = ex[1]
+			print ">>> Using %s per argument.\n" % name
 		else:
 			smiles = sys.argv[1]
 
 	mol = smiles_to_molecule(smiles)
+	mol.informalName = name
 
 	mol.print_matrix()
 
