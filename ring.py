@@ -19,19 +19,23 @@ RING_TYPES = enum(
 )
 
 # FIXME: Remove most of Ring's methods. They belong in analysis only!
-class Ring(object):
+class Ring(tuple):
 	"""
 	Ring Data Structure.
 	Contains the atom cycle in the ring, bonds, etc.
 	Also assists in processing tasks.
 	"""
 
-	def __init__(self, path):
+	def __new__(cls, path):
 		"""
-		Ring Constructor
-		Must specify the atom cycle that constitutes the ring.
-		"""
+		Build tuple subclass instance. The underlying tuple holds the
+		ring path itself, so we do some cleanup to ensure each atom 
+		only occurs once. 
 
+		The start and end atom are bonded. (Technically, rings are also
+		undirected cycles. There is no real 'start' or 'end', or even 
+		'direction'. 
+		"""
 		def build_path(path):
 			"""Remove the end atom if it is also the start atom."""
 			newPath = list(path[:])
@@ -39,6 +43,14 @@ class Ring(object):
 				newPath.pop()
 			return tuple(newPath)
 
+		# TODO: Throw exception on twice-included atoms?
+		return tuple.__new__(cls, build_path(path))
+
+	def __init__(self, path):
+		"""
+		Ring Constructor
+		Must specify the atom cycle that constitutes the ring.
+		"""
 		def build_bonds(path):
 			"""Build a tuple of sets that represent the bonds."""
 			l = len(path)
@@ -49,10 +61,8 @@ class Ring(object):
 				bonds.append(set([a, a2]))
 			return tuple(bonds)
 
-		# The path of atoms in the ring. 
-		# Each atom only occurs once, so start and end are bonded.
-		# (Technically, rings are undirected cycles.)
-		self.ringPath = build_path(path)
+		# XXX/FIXME/TODO: DEPRECATED! This is handled by the tuple superclass.
+		self.ringPath = self[:]
 
 		# Bonds in the ring. 
 		# A tuple of sets (each set is an edge), which makes testing
@@ -175,7 +185,7 @@ class Ring(object):
 
 	def __repr__(self):
 		"""Returns representation of object."""
-		return "<Ring %s>" % str(self.ringPath)
+		return str(self)
 
 	def __str__(self):
 		"""Returns string representation of the object."""
@@ -195,9 +205,8 @@ class Ring(object):
 			rtype = 'Irregular'
 
 		if rtype:
-			return "<%sRing x%d %s>"  % (rtype, len(self.ringPath),
-					self.ringPath)
-		return "<Ring x%d %s>" % (len(self.ringPath), self.ringPath)
+			return "%sRing%s"  % (rtype, str(self[:]))
+		return "Ring%s" % str(self[:])
 
 class RingGroup(tuple):
 	"""

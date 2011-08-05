@@ -115,9 +115,10 @@ def main():
 	# Perception algorithms. 
 	rings = identify_rings(mol)
 
+	print "\nRing Perception:"
 	print rings
-	for ring in rings:
-		print ring
+
+	sys.exit()
 
 	chains = identify_chains(mol, rings)
 
