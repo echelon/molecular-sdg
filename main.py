@@ -19,7 +19,7 @@ from smiles import Smiles
 from smiles import smiles_to_matrix
 from util.matrix import print_matrix
 from algo.path import *
-from perception.ring import *
+from perception.rings import *
 from perception.chain import *
 from sdg.ring_analysis import *
 
@@ -107,27 +107,28 @@ def main():
 		else:
 			smiles = sys.argv[1]
 
-	mat = smiles_to_matrix(smiles)
+	mol = smiles_to_matrix(smiles)
 
-	mat = ConstMolMatrix(mat)
-	mat.print_matrix()
+	mol = ConstMolMatrix(mol)
+	mol.print_matrix()
 
 	# Perception algorithms. 
-	rings = identify_rings(mat)
+	rings = identify_rings(mol)
 
 	print rings
+	for ring in rings:
+		print ring
 
-	chains = identify_chains(mat, rings)
-
-	print chains
-
-	sys.exit()
+	chains = identify_chains(mol, rings)
 
 	#print "SMILES: %s\n" % smiles
 	#print "Ring Perception (%d):\n%s\n" % (len(rings), rings)
 	#print "\nChain Perception (%d):\n%s\n" % (len(chains), chains)
 
-	#peelOrder = ring_analysis(rings, mol)	
+	# Ring analysis
+	peelOrder = ring_analysis(rings, mol)	
+
+	sys.exit()
 
 	# TODO: Remove 'Molecule' 
 	#print "\n\nRing Peel Order:"

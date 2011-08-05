@@ -402,6 +402,7 @@ class ConstMolMatrix(MolMatrix):
 		print "Isotopes: %s" % str(self.isotopes)
 		print "Hybridizations: %s" % str(self.hybridizations)
 		print "Degrees: %s" % str(self.degrees)
+		print ""
 
 		# XXX: Won't print >= 100 atoms nicely. Not that it would be
 		# wise to print out such systems in the terminal...

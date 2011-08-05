@@ -18,6 +18,8 @@ Chemical Graphs", J. Chem. Inf. Comput. Sci., vol 29 (1989).
 Problem", J. Chem. Inf. Comput. Sci., vol 34 (1994).
 """
 
+from ring import Ring
+
 # TODO: Implement phase 1 heuristics
 # TODO: Implement phase 2
 # TODO: Implement phase 3
@@ -113,9 +115,9 @@ def identify_rings(mol):
 	# TODO: Implement phase two and three.
 	rings = phase1(mol)
 
-	# Make constant tuples.
+	# Return Ring objects.
 	for i in range(len(rings)):
-		rings[i] = tuple(rings[i])
+		rings[i] = Ring(rings[i])
 
 	return tuple(rings)
 
