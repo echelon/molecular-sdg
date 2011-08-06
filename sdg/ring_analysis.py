@@ -5,100 +5,17 @@ This code is adapted from [Helson].
 
 from ring import Ring, RingGroup, RING_TYPES
 
-def ring_analysis(rings, mol):
+def ring_analysis(ringGroups, mol):
 	"""
 	Perform ring analysis using the ring peeling technique.
 	This is a two-stage algorithm adapted from [Helson].
 	"""
-	remainingRings = rings[:]
+	
+	for ringGroup in ringGroups:
+		peelOrder = _assign_ring_types(ringGroup)
 
-	# TODO: Should this be external? We need to return RingGroups.
-	groups = _segment_into_ring_groups(remainingRings)
-	print "Ring Groups: %s" % groups
-
-	peelOrder = _assign_ring_types(remainingRings)
-
-	# TODO: Repeat again with license for bridged systems. 
-
-	mol.rings = remainingRings
-	mol.ringGroups = groups
-
-	# TODO: mol also needs peel order. 
-
-	return peelOrder
-
-def _segment_into_ring_groups(ringList):
-	"""
-	Segment the list of rings from the perception stage into ring 
-	groups based on the connectivity.
-
-	Input: A list of Ring objects.
-	Output: A list of RingGroup objects.
-
-	This is not based on literature, but aids in analysis and 
-	construction.
-	"""
-
-	def in_same_group(ring1, ring2, ringList):
-		"""
-		Determine if ring1 and ring2 are in the same group by
-		attempting to traverse from one to the other. This is
-		just BFS without the queue.
-		"""
-		# Easy case -- see if the rings are directly connected.
-		if ring1.isSpiroTo(ring2) or ring1.isFusedTo(ring2) or \
-				ring1.isBridgedTo(ring2):
-					return True
-
-		# Iteratively collect rings that are fused/spiro/bridged from
-		# ring1. If we manage to collect ring2, then the two are in the
-		# same connectivity group. This is similar to [Helson]'s 
-		# "central" test algorithm (Procedure D of Ring Analysis, 
-		# p. 334)
-		rings = list(ringList[:])
-		rings.pop(rings.index(ring1))
-
-		collected = [ring1]
-		justAdded = [ring1]
-		while len(justAdded) != 0:
-			remRings = [x for x in rings if x not in collected]
-			added = []
-			for r in justAdded:
-				for s in remRings:
-					if r.isSpiroTo(s) or r.isFusedTo(s) or r.isBridgedTo(s):
-						collected.append(s)
-						added.append(s)
-			justAdded = added
-
-		# Result.
-		return ring2 in collected
-
-	# Simple case -- only one ring in the entire molecule.
-	if len(ringList) == 1:
-		return [RingGroup(ringList)]
-
-	# More than one ring in molecule -- must group memberships.
-	groups = []
-	ungrouped = list(ringList[:])
-	justGrouped = []
-	rId = 0
-
-	while len(ungrouped) > 0:
-		groupRoot = ungrouped.pop(0)
-		justGrouped = []
-		for ring in ungrouped:
-			if in_same_group(groupRoot, ring, ringList):
-				justGrouped.append(ring)
-
-		# This is the next ring group.
-		group = [groupRoot]
-		group.extend(justGrouped)
-		groups.append(RingGroup(group, rId))
-		rId += 1
-
-		ungrouped = [x for x in ungrouped if x not in justGrouped]
-
-	return groups
+		# TODO: Repeat again with license for bridged systems. 
+		ringGroup.peelOrder = peelOrder
 
 def _assign_ring_types(remainingRings):
 	"""
@@ -199,7 +116,13 @@ def _assign_ring_types(remainingRings):
 	Analyze and Peel Rings from the Ring System(s).
 	"""
 
+	rings = []
+	for ring in remainingRings:
+		rings.append(ring)
+
+	# Can't work with RingGroup directly, convert to list.
 	remainingRings = list(remainingRings[:])
+
 	peelOrder = []
 
 	while True:
@@ -243,7 +166,7 @@ def _assign_ring_types(remainingRings):
 			continue
 
 		# Incomplete assignment... we have to terminate.
-		print "Incomplete assignment. Break."
+		# TODO/FIXME: print "Incomplete assignment. Break."
 		break
 
 	return peelOrder

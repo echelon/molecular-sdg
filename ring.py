@@ -1,5 +1,13 @@
 """
-Ring-related data structures.
+Ring-related data structures and essential functions.
+
+	Classes:
+		Ring
+		RingGroup
+		RingSystem (TODO: Not necessarily needed...)
+
+	Functions:
+		partition_rings()
 """
 
 from util.enum import enum
@@ -70,7 +78,14 @@ class Ring(tuple):
 		self.bonds = build_bonds(self.ringPath)
 
 		# The type of ring (elucidated during ring peeling).
+		# TODO: rename peelStrategy.
 		self.type = RING_TYPES.NONE
+
+		# Ring-Local coordinate position of every atom in the ring.
+		self.pos = [{'x':0, 'y':0} for x in range(len(self[:]))]
+
+		# Ring-Local CFS (in radians) for every atom in the ring.
+		self.cfs = [{'hi':0, 'lo':0} for x in range(len(self[:]))]
 
 	def isCentralRing(self, ringList):
 		"""
@@ -210,10 +225,13 @@ class Ring(tuple):
 
 class RingGroup(tuple):
 	"""
-	Contains all rings that are connected together.
+	Container for all rings that are connected together.
 	Eg. "PhPh-C-Ph-C-PhPhPh" contains 3 ring groups.
 
-	As this is a tuple subclass, Pythonic usage should work well:
+	See partition_rings() in this module for the function that creates
+	ring groups. 
+
+	This is a tuple subclass, so Pythonic usage should work well:
 
 	>>> group = RingGroup([ring1, ring2, ring3], rgId=1)
 	>>> ring2 in group
@@ -228,6 +246,7 @@ class RingGroup(tuple):
 
 	def __new__(cls, rings, rgId = None):
 		"""Build tuple subclass instance."""
+		# TODO: Check to ensure no two rings are included twice.
 		return tuple.__new__(cls, rings)
 
 	def __init__(self, rings, rgId=None):
@@ -237,10 +256,14 @@ class RingGroup(tuple):
 		  tuple data
 		* an identifier (optional)
 		"""
+		
 		# An arbitrary ID that the grouping algorithm assigns. Should
 		# be unique for every ring group in the molecule, but it is 
 		# not mandatory.
 		self.rgId = rgId
+
+		# Peel order established in ring analysis.
+		self.peelOrder = []
 
 	def __repr__(self):
 		"""Debug representation."""
@@ -261,5 +284,88 @@ class RingSystem(object):
 	"""
 	Contains all of the rings in the molecule.
 	"""
-	pass
+
+	def __init__(self):
+		"""Ring system CTOR."""
+		# Smallest Set of Smallest Rings.
+		# This may not ultimately be the ring set we draw with.
+		#self.sssr = None
+		#self.sssrAlgo = None
+		# Ring groups -- rings that are touching each other.
+		#self.groups = None
+		pass
+
+def partition_rings(ringList):
+	"""
+	Segment a list of rings in the molecule into ring groups based on
+	their connectivity. Rings that are not clustered should not be put
+	into the same group. 
+
+	Input: A list of Ring objects.
+	Output: A list of RingGroup objects.
+
+	This is not based on literature, but aids in analysis and
+	construction.
+	"""
+
+	def in_same_group(ring1, ring2, ringList):
+		"""
+		Determine if ring1 and ring2 are in the same group by
+		attempting to traverse from one to the other. This is
+		just BFS without the queue.
+		"""
+		# Easy case -- see if the rings are directly connected.
+		if ring1.isSpiroTo(ring2) or ring1.isFusedTo(ring2) or \
+				ring1.isBridgedTo(ring2):
+					return True
+
+		# Iteratively collect rings that are fused/spiro/bridged from
+		# ring1. If we manage to collect ring2, then the two are in the
+		# same connectivity group. This is similar to [Helson]'s 
+		# "central" test algorithm (Procedure D of Ring Analysis, 
+		# p. 334)
+		rings = list(ringList[:])
+		rings.pop(rings.index(ring1))
+
+		collected = [ring1]
+		justAdded = [ring1]
+		while len(justAdded) != 0:
+			remRings = [x for x in rings if x not in collected]
+			added = []
+			for r in justAdded:
+				for s in remRings:
+					if r.isSpiroTo(s) or r.isFusedTo(s) or r.isBridgedTo(s):
+						collected.append(s)
+						added.append(s)
+			justAdded = added
+
+		# Result.
+		return ring2 in collected
+
+	# Simple case -- only one ring in the entire molecule.
+	if len(ringList) == 1:
+		return [RingGroup(ringList)]
+
+	# More than one ring in molecule -- must group memberships.
+	groups = []
+	ungrouped = list(ringList[:])
+	justGrouped = []
+	rId = 0
+
+	while len(ungrouped) > 0:
+		groupRoot = ungrouped.pop(0)
+		justGrouped = []
+		for ring in ungrouped:
+			if in_same_group(groupRoot, ring, ringList):
+				justGrouped.append(ring)
+
+		# This is the next ring group.
+		group = [groupRoot]
+		group.extend(justGrouped)
+		groups.append(RingGroup(group, rId))
+		rId += 1
+
+		ungrouped = [x for x in ungrouped if x not in justGrouped]
+
+	return groups
 

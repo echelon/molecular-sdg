@@ -9,19 +9,23 @@ approach at drawing that I wish to retain for the time being.
 At present, the code I am working on is in 'matrix.py' and 'smiles.py'.
 """
 
-# Std lib
 import sys
 
-# Project
-from examples import get_example
 from molecule import Molecule
+from ring import partition_rings
+
+from examples import get_example
 from smiles import Smiles
 from smiles import smiles_to_molecule
-from util.matrix import print_matrix
 from algo.path import *
+
+# Perception
 from perception.rings import *
 from perception.chain import *
+
+# Analysis Phase
 from sdg.ring_analysis import *
+from sdg.ring_construction import *
 
 # XXX: Temp
 from gui import Window
@@ -55,15 +59,17 @@ def main():
 	rings = identify_rings(mol)
 	chains = identify_chains(mol, rings)
 
-	print "\nRing Perception:"
-	print rings
-	print "\nChain Perception:"
-	print chains
-
 	# Ring analysis
-	peelOrder = ring_analysis(rings, mol)	
+	ringGroups = partition_rings(rings)
 
-	print peelOrder
+	print ringGroups
+
+	ring_analysis(ringGroups, mol)
+
+	for rg in ringGroups:
+		print rg.peelOrder
+
+
 
 	sys.exit()
 

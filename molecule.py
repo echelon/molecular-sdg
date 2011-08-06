@@ -60,6 +60,10 @@ class Molecule(object):
 		self.smiles = None
 		self.informalName = None
 
+		# Circular Free Sweep (CFS) for each atom. Only used in ring
+		# construction of analysis phase and later again in assembly.
+		self.cfs = [{'hi':0, 'lo':0} for x in range(self.size)]
+
 		"""
 		=== Processing Functions === 
 		Functions for: Conversion to immutable types; Building of 
@@ -272,7 +276,7 @@ class Molecule(object):
 			print ln
 
 		# Lots of information 
-		print "\nLabel; Hybridization; Degree; Alpha and Beta Atoms:"
+		print "\nLabels; Hybridization; Degree; Alpha and Beta Atoms:"
 		for i in range(self.size):
 			ln = row_header(i)
 			hybrid = str(self.hybridizations[i])
