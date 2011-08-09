@@ -5,6 +5,9 @@ It is the process of laying out the ring coordinates.
 
 from math import *
 from cairo import *
+import sys
+
+from ring import RING_TYPES
 
 class Point(object):
 	def __init__(self, x, y):
@@ -84,6 +87,58 @@ def draw_test(ctx, ptA, ptB=None, bondLen=30.0, direc='cw', num=5):
 	draw_spiral2(positions)
 
 
+# ====================================================
+# XXX: Actual work is here. Above is just debug/viz.
+# ====================================================
+
+def construct_group(ringGroup):
+	"""
+	Construct the coordinates, CFS, etc. for a ring group.
+	Follows from [Helson] p~335
+	"""
+
+	remRings = list(ringGroup[:])
+
+	# Take care of core ring
+	core = remRings.pop()
+	if core.type != RING_TYPES.CORE:
+		print "TODO: RING IS NOT CORE!"
+		sys.exit()
+
+	print core[1]
+	#sys.exit()
+	#core.pos[0].x = foo
+	#core.pos[0].y = foo
+
+	# Assign points for core (using CW)
+
+	print "\n\n"
+	#points = regular_polygon(core, bondLen=100.0, direc='cw')
+	#points = regular_polygon(6, Point(8000.0, -500.0), bondLen=100.0, direc='cw')
+	points = regular_polygon(6, Point(0.0, 0.0), 
+								Point(150.0, 150.0), 
+								bondLen=100.0, direc='cw')
+
+	print points
+	print "\n\n"
+
+	return
+	# IN LOOP:
+	# 1. Get fusion atoms
+	# 2. May need to swap fusion atoms to ensure direction still CW
+	# 3. Give positions. 
+
+	# Work on remaining rings.
+	while len(remRings) > 0:
+		ring = remRings.pop()
+
+		if len(done) == 0:
+			pass
+
+
+def attach_fused(ring):
+	pass
+
 # TODO for regular_polygon: handle cw/ccw. Still not sure how it works.
 def regular_polygon(size, ptA, ptB=None, bondLen=100.0, direc='cw'):
 	"""
@@ -150,19 +205,34 @@ def regular_polygon(size, ptA, ptB=None, bondLen=100.0, direc='cw'):
 	oY = ptC.y + z* u[1]
 	ptO = Point(oX, oY)
 
+	# Find angle to point A. 
+	adj = ptA.x - ptO.x
+	opp = ptA.y - ptO.y
+
+	theta = 0
+	if adj == 0.0:
+		if opp >= 0:
+			theta = pi * 1/2
+		else:
+			theta = pi * 3/2
+	else:
+		theta = atan(opp/adj)
+	
 	# Calculate the positions of each atom
 	positions = []
-	theta = 0
 	for x in range(size):
-		px = ptA.x + cos(theta) * r
-		py = ptA.y + sin(theta) * r
+		px = ptO.x + cos(theta) * r
+		py = ptO.y + sin(theta) * r
 		positions.append(Point(px, py))
-		theta += phi
+		theta += phi # CW
 
+	print ""
+	print positions
 	return positions
 
+"""
+# Entirely TODO
 def open_polygon():
-	"""
 	Before implementing this, try doing:
 
 		Drawing:
@@ -179,6 +249,6 @@ def open_polygon():
 			* Molecule
 			* Matrix
 
-	"""
 	pass
+"""
 
