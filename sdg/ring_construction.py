@@ -51,9 +51,10 @@ def construct_group(ringGroup):
 		ring.pos[ring.index(b)] = fusionRing.pos[fusionRing.index(b)]
 
 		# FIXME, FIXME, FIXME
-		#a, b = b, a # TODO: Need algo to decide which side to draw on
+		a, b = b, a # TODO: Need algo to decide which side to draw on
 
 		regular_polygon(ring, atomA=a, atomB=b, bondLen=50.0, direc='cw')
+		assigned.append(ring)
 
 	return
 	# IN LOOP:
@@ -88,6 +89,8 @@ def regular_polygon(ring, atomA=None, atomB=None, bondLen=100.0, direc='cw'):
 
 	ptA = None
 	ptB = None
+	idxA = 0 # Ring index of the atom, that is ring[idx]
+	idxB = 0
 
 	# If atoms are not specified, this is probably a core ring, and we
 	# are free to align the ring with the coordinate system. 
@@ -98,9 +101,9 @@ def regular_polygon(ring, atomA=None, atomB=None, bondLen=100.0, direc='cw'):
 		ptA = ring.pos[idxA]
 		ptB = ring.pos[idxB]
 	else:
-		atomA = 0
+		idxA = 0
 		# TODO: is this correct cw/ccw handling?
-		atomB = ((atomA + 1) if direc == 'cw' else (atomA - 1)) % len(ring)
+		idxB = ((idxA + 1) if direc == 'cw' else (idxA - 1)) % len(ring)
 
 		# Align to coordinate system.
 		ptA = Point(0.0, 0.0)
@@ -157,12 +160,12 @@ def regular_polygon(ring, atomA=None, atomB=None, bondLen=100.0, direc='cw'):
 		theta = atan(opp/adj)
 
 	# Calculate the positions of each atom
-	curAtom = atomA
+	i = idxA
 	for x in range(len(ring)):
 		px = ptO.x + cos(theta) * r
 		py = ptO.y + sin(theta) * r
-		ring.pos[curAtom] = Point(px, py)
-		curAtom = (curAtom + 1) % len(ring)
+		ring.pos[i] = Point(px, py)
+		i = (i + 1) % len(ring)
 		theta += phi # XXX: CW
 
 	return True
