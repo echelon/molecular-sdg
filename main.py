@@ -53,7 +53,7 @@ def main():
 	mol = smiles_to_molecule(smiles)
 	mol.informalName = name
 
-	mol.print_matrix()
+	#mol.print_matrix()
 
 	# Perception algorithms. 
 	rings = identify_rings(mol)
@@ -62,28 +62,22 @@ def main():
 	# Ring analysis
 	ringGroups = partition_rings(rings)
 
-	print ringGroups
+	#print ringGroups
 
 	ring_analysis(ringGroups, mol)
 
 	for rg in ringGroups:
 		print rg.peelOrder
 
-
-
-	sys.exit()
-
-	# TODO: Remove 'Molecule' 
-	#print "\n\nRing Peel Order:"
-	#for x in peelOrder:
-	#	print x
+	for group in ringGroups:
+		print group
+		construct_group(group)
 
 	win = Window('title')
 	win.setText(smiles)
+	win.ringGroups = ringGroups # XXX: Pass ring groups off to gui
 	win.run()
 
-	#print "\n\n(Repeated) Ring Perception (%d):\n%s\n" % (len(rings), rings)
-	#print "Smiles: %s" % smiles
 
 if __name__ == '__main__':
 	main()

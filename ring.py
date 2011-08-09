@@ -26,6 +26,16 @@ RING_TYPES = enum(
 	'NONE'			# No type assigned
 )
 
+class Point(object):
+	"""Represents a 2D point"""
+	def __init__(self, x, y):
+		self.x = x
+		self.y = y
+	def __str__(self):
+		return "pt(%f, %f)" % (self.x, self.y)
+	def __repr__(self):
+		return str(self)
+
 # FIXME: Remove most of Ring's methods. They belong in analysis only!
 class Ring(tuple):
 	"""
@@ -66,14 +76,15 @@ class Ring(tuple):
 			for i in range(l):
 				a = path[i]
 				a2 = path[(i+1)%l]
-				bonds.append(set([a, a2]))
-			return tuple(bonds)
+				bonds.append(frozenset([a, a2]))
+			return frozenset(bonds)
 
-		# XXX/FIXME/TODO: DEPRECATED! This is handled by the tuple superclass.
+		# XXX/FIXME/TODO: DEPRECATED! This is handled by the tuple 
+		# superclass.
 		self.ringPath = self[:]
 
 		# Bonds in the ring. 
-		# A tuple of sets (each set is an edge), which makes testing
+		# A set of sets (each inner set is an edge), which makes testing
 		# for bridged rings easy. 
 		self.bonds = build_bonds(self.ringPath)
 
@@ -82,11 +93,12 @@ class Ring(tuple):
 		self.type = RING_TYPES.NONE
 
 		# Ring-Local coordinate position of every atom in the ring.
-		self.pos = [{'x':0, 'y':0} for x in range(len(self[:]))]
+		self.pos = [None for x in range(len(self[:]))]
 
 		# Ring-Local CFS (in radians) for every atom in the ring.
 		self.cfs = [{'hi':0, 'lo':0} for x in range(len(self[:]))]
 
+	# TODO: Deprecated. Move into relevant module.
 	def isCentralRing(self, ringList):
 		"""
 		Determine ring centrality.
@@ -167,6 +179,7 @@ class Ring(tuple):
 
 		return True
 
+	# TODO: Deprecated. Move into relevant module.
 	def isSpiroTo(self, otherRing):
 		"""
 		Returns True if the ring shares only one atom with the other
@@ -178,6 +191,7 @@ class Ring(tuple):
 				count += 1
 		return count == 1
 
+	# TODO: Deprecated. Move into relevant module.
 	def isFusedTo(self, otherRing):
 		"""
 		Returns True if the ring shares one bond (edge) with the other
@@ -190,6 +204,7 @@ class Ring(tuple):
 		# TODO: Can they share more than one and be considered fused?
 		return count == 1
 
+	# TODO: Deprecated. Move into relevant module.
 	def isBridgedTo(self, otherRing):
 		"""
 		Returns True if the ring bridges the other ring.
@@ -200,10 +215,6 @@ class Ring(tuple):
 
 	def __repr__(self):
 		"""Returns representation of object."""
-		return str(self)
-
-	def __str__(self):
-		"""Returns string representation of the object."""
 		# Type => String map. Don't handle 'none'
 		rtype = ''
 		if self.type == RING_TYPES.CORE:
@@ -222,6 +233,14 @@ class Ring(tuple):
 		if rtype:
 			return "%sRing%s"  % (rtype, str(self[:]))
 		return "Ring%s" % str(self[:])
+
+	def __str__(self):
+		"""Returns string representation of the object."""
+		st = repr(self)
+		st += "\n Positions:\n"
+		for i in range(len(self.pos)):
+			st += "   * %d : %s\n" % (self[i], str(self.pos[i]))
+		return st
 
 class RingGroup(tuple):
 	"""
@@ -265,6 +284,21 @@ class RingGroup(tuple):
 		# Peel order established in ring analysis.
 		self.peelOrder = []
 
+		# Connection tables. The subscripts and values used are NOT the
+		# atom labels, rather they are the subscripts internal to the
+		# ring.
+		self.spiroTo = [[] for x in range(len(self))]
+		self.fusedTo = [[] for x in range(len(self))]
+		self.bridgedTo = [[] for x in range(len(self))]
+
+		# Build fused table.
+		for i in range(len(self)):
+			for j in range(len(self)):
+				if i == j:
+					continue
+				if self[i].bonds & self[j].bonds:
+					self.fusedTo[i].append(j)
+
 	def __repr__(self):
 		"""Debug representation."""
 		if self.rgId == None:
@@ -276,8 +310,9 @@ class RingGroup(tuple):
 		ret = "Ring Group"
 		if self.rgId != None:
 			ret += " (#%d)" % self.rgId
-		for ring in self:
-			ret += "\n  * " + str(ring)
+		ret += "\n Rings / Fused To:"
+		for i in range(len(self)):
+			ret += "\n  * %d %s :\t%s" % (i, repr(self[i]), self.fusedTo[i])
 		return ret
 
 class RingSystem(object):

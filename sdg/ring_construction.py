@@ -4,92 +4,9 @@ It is the process of laying out the ring coordinates.
 """
 
 from math import *
-from cairo import *
 import sys
 
-from ring import RING_TYPES
-
-class Point(object):
-	def __init__(self, x, y):
-		self.x = x
-		self.y = y
-	def __str__(self):
-		return "(%f, %f)" % (self.x, self.y)
-	def __repr__(self):
-		return str(self)
-
-# XXX: 'num' is a hack
-# TODO: Handle cw/ccw direction.
-def draw_test(ctx, ptA, ptB=None, bondLen=30.0, direc='cw', num=5):
-	# CLEAR
-	pat = SolidPattern(1.0, 1.0, 1.0, 0.9)
-	ctx.rectangle(0,0, 500, 500)
-	ctx.set_source(pat)
-	ctx.fill()
-
-	def draw_line(ptA, ptB):
-		ctx.new_path()
-		ctx.set_source_rgb(0.0, 0.0, 0.0)
-		ctx.move_to(ptA.x, ptA.y)
-		ctx.line_to(ptB.x, ptB.y)
-		ctx.close_path()
-		ctx.stroke()
-
-	def draw_spiral(center, num, phi, r):
-		ctx.set_source_rgb(0.0, 0.0, 0.0)
-		# TODO/TEST w/o first or second postions
-		theta = 0
-		for i in range(num):
-			theta += phi
-			ctx.new_path()
-			px = ptA.x + cos(theta) * r
-			py = ptA.y + sin(theta) * r
-			ctx.move_to(ptA.x, ptA.y)
-			ctx.line_to(px, py)
-			ctx.close_path()
-			ctx.stroke()
-
-	def draw_spiral2(positions):
-		"""
-		Draw regular polygons. (WORK IN PROGRESS)
-		Input: A list of each vertex position. 
-		"""
-		# TODO: Must use actual 1st and 2nd positions. 
-		# TODO: Use matrix stacks to translate a local coord system.
-		positions = positions[:]
-
-		# In order to draw edge from last->first
-		positions.append(positions[0])
-
-		first = positions.pop(0)
-		next_ = first
-		last = 0.0
-
-		ctx.set_source_rgb(0.0, 0.0, 0.0)
-		ctx.new_path()
-		while len(positions) > 0:
-			last = next_
-			next_ = positions.pop(0)
-			ctx.move_to(last.x, last.y)
-			ctx.line_to(next_.x, next_.y)
-
-		ctx.close_path()
-		ctx.stroke()
-
-	#draw_line(ptA, ptB)
-	#draw_line(pts['o'], pts['c'])
-
-	size = int(num)
-	#d = regular_polygon(size, ptA, ptB, bondLen, direc)
-	#draw_spiral(d['o'], size, d['phi'], d['r'])
-
-	positions = regular_polygon(size, ptA, ptB, bondLen, direc)
-	draw_spiral2(positions)
-
-
-# ====================================================
-# XXX: Actual work is here. Above is just debug/viz.
-# ====================================================
+from ring import RING_TYPES, Point
 
 def construct_group(ringGroup):
 	"""
@@ -102,25 +19,41 @@ def construct_group(ringGroup):
 	# Take care of core ring
 	core = remRings.pop()
 	if core.type != RING_TYPES.CORE:
-		print "TODO: RING IS NOT CORE!"
-		sys.exit()
-
-	print core[1]
-	#sys.exit()
-	#core.pos[0].x = foo
-	#core.pos[0].y = foo
+		raise Exception, "Last Ring from Ring Peeling is not Core!"
 
 	# Assign points for core (using CW)
+	regular_polygon(core, bondLen=50.0, direc='cw')
 
-	print "\n\n"
-	#points = regular_polygon(core, bondLen=100.0, direc='cw')
-	#points = regular_polygon(6, Point(8000.0, -500.0), bondLen=100.0, direc='cw')
-	points = regular_polygon(6, Point(0.0, 0.0), 
-								Point(150.0, 150.0), 
-								bondLen=100.0, direc='cw')
+	# Work on remaining rings.
+	# TODO: Function, "attach_fused"
 
-	print points
-	print "\n\n"
+	assigned = [core]
+	while len(remRings) > 0:
+		ring = remRings.pop()
+
+		# Get the fusion atoms
+		fusionAtoms = None
+		fusionRing = None
+		for r in assigned:
+			atoms = ring.bonds & r.bonds
+			if not atoms:
+				continue
+			fusionAtoms = list(tuple(atoms)[0])
+			fusionRing = r
+			break
+
+		a = fusionAtoms[0]
+		b = fusionAtoms[1]
+
+		# Copy already known fused-edge positions to the ring
+		# They'll be used in the regular_polygon() procedure. 
+		ring.pos[ring.index(a)] = fusionRing.pos[fusionRing.index(a)]
+		ring.pos[ring.index(b)] = fusionRing.pos[fusionRing.index(b)]
+
+		# FIXME, FIXME, FIXME
+		#a, b = b, a # TODO: Need algo to decide which side to draw on
+
+		regular_polygon(ring, atomA=a, atomB=b, bondLen=50.0, direc='cw')
 
 	return
 	# IN LOOP:
@@ -128,27 +61,15 @@ def construct_group(ringGroup):
 	# 2. May need to swap fusion atoms to ensure direction still CW
 	# 3. Give positions. 
 
-	# Work on remaining rings.
-	while len(remRings) > 0:
-		ring = remRings.pop()
-
-		if len(done) == 0:
-			pass
-
-
-def attach_fused(ring):
-	pass
 
 # TODO for regular_polygon: handle cw/ccw. Still not sure how it works.
-def regular_polygon(size, ptA, ptB=None, bondLen=100.0, direc='cw'):
+def regular_polygon(ring, atomA=None, atomB=None, bondLen=100.0, direc='cw'):
 	"""
 	Calculate the coordinate positions for a regular polygon.
 
 	Inputs:
-		size - number of atoms in the ring.
-		ptA - the first (x,y) posistion to start with
-		ptB - the second (x,y) position. 
-			  optional if alignment with x-axis is desired.
+		ring - ring object
+		atomA/atomB - desired first and second atom
 		bondLen - desired length of the bonds.
 		direc - direction of the construction.
 
@@ -160,27 +81,43 @@ def regular_polygon(size, ptA, ptB=None, bondLen=100.0, direc='cw'):
 	
 	Returns: A list of Point object coordinates for each vertex.
 	"""
-	if direc != 'cw':
-		direc = 'ccw'
+	if direc not in ('cw', 'ccw'):
+		raise Exception, 'Direction supplied `%s` is invalid.' % direc
 
-	# If a second point is not specified, this is probably a core ring,
-	# and we are free to align the ring with the coordinate system. 
 	# TODO: Update to ensure proper cw/ccw handling
-	if ptB == None:
-		if size % 2 == 0:
+
+	ptA = None
+	ptB = None
+
+	# If atoms are not specified, this is probably a core ring, and we
+	# are free to align the ring with the coordinate system. 
+
+	if atomA != None and atomB != None:
+		idxA = ring.index(atomA)
+		idxB = ring.index(atomB)
+		ptA = ring.pos[idxA]
+		ptB = ring.pos[idxB]
+	else:
+		atomA = 0
+		# TODO: is this correct cw/ccw handling?
+		atomB = ((atomA + 1) if direc == 'cw' else (atomA - 1)) % len(ring)
+
+		# Align to coordinate system.
+		ptA = Point(0.0, 0.0)
+		if len(ring) % 2 == 0:
 			ptB = Point(ptA.x, ptA.y + bondLen)
 		else: 
 			ptB = Point(ptA.x + bondLen, ptA.y)
 
 	# Discern bond length.
-	# FIXME: Kind of inconsistent to recalculate.
+	# FIXME: Inconsistent to recalculate.
 	x = abs(ptA.x - ptB.x)
 	y = abs(ptA.y - ptB.y)
 	L = sqrt(x**2 + y**2) # Bond length
 
 	# Characteristic angle; the angle between two vertices (from
 	# polygon center 'O'), eg. angle <AOB
-	phi = radians(360.0)/size
+	phi = radians(360.0)/len(ring)
 
 	# Distance from polygon center 'O' to each vertex, eg. O->A
 	r = L/(2*sin(phi/2))
@@ -211,24 +148,24 @@ def regular_polygon(size, ptA, ptB=None, bondLen=100.0, direc='cw'):
 
 	theta = 0
 	if adj == 0.0:
+		# TODO: Verify
 		if opp >= 0:
 			theta = pi * 1/2
 		else:
 			theta = pi * 3/2
 	else:
 		theta = atan(opp/adj)
-	
+
 	# Calculate the positions of each atom
-	positions = []
-	for x in range(size):
+	curAtom = atomA
+	for x in range(len(ring)):
 		px = ptO.x + cos(theta) * r
 		py = ptO.y + sin(theta) * r
-		positions.append(Point(px, py))
-		theta += phi # CW
+		ring.pos[curAtom] = Point(px, py)
+		curAtom = (curAtom + 1) % len(ring)
+		theta += phi # XXX: CW
 
-	print ""
-	print positions
-	return positions
+	return True
 
 """
 # Entirely TODO

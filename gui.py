@@ -1,4 +1,5 @@
 import math
+from cairo import *
 import pygtk
 pygtk.require('2.0')
 import gtk
@@ -95,27 +96,118 @@ class Window(object):
 
 	def drawLines(self, pt1=None, pt2=None, angle=None, size=None):
 
-		L = 10
-		pt1 = Point(250, 260)
-		pt2 = Point(120, 180+L)
+		# XXX: Draw whatever is passed from main.py
 
-		if angle != None:
-			angle = radians(angle)
-			x = pt1.x + cos(angle) * L
-			y = pt1.y + sin(angle) * L
-			pt2 = Point(x, y)
+		ctx = self.drawable.window.cairo_create()
 
-		if not size:
-			size = 5
+		# CLEAR
+		pat = SolidPattern(1.0, 1.0, 1.0, 0.9)
+		ctx.rectangle(0,0, 500, 500)
+		ctx.set_source(pat)
+		ctx.fill()
 
-		# TODO: Matrix Transform 
+		def draw_edge(ptA, ptB, xOff=100, yOff=100):
+			"""
+			JUST A TEST. More sophisticated later!
+			"""
+			ctx.set_source_rgb(0.0, 0.0, 0.0)
+			ctx.new_path()
+			ctx.move_to(ptA.x + xOff, ptA.y + yOff)
+			ctx.line_to(ptB.x + xOff, ptB.y + yOff)
+			ctx.close_path()
+			ctx.stroke()
+
+		xOff = 50
+		yOff = 50
+		for group in self.ringGroups:
+			xOff += 100
+			yOff += 100
+			for ring in group:
+				print ring
+				for bond in ring.bonds:
+					bond = list(bond)
+					atomA = bond[0]
+					atomB = bond[1]
+					ptA = ring.pos[ring.index(atomA)]
+					ptB = ring.pos[ring.index(atomB)]
+
+					draw_edge(ptA, ptB, xOff, yOff)
+
+			xOff, yOff = yOff, xOff
+
+		# TODO: Cairo Canvas Matrix Transform 
 		# Matrix stack: save() restore()
 		#ang = radians(180)
 		#m = Matrix(cos(ang), sin(ang), -sin(ang), cos(ang), 0, 0) # ROT
 		#ctx.transform(m)
 
-		ctx = self.drawable.window.cairo_create()
-		draw_test(ctx, pt1, pt2, num=size)
-		#draw_test(ctx, pt1, num=size)
+# XXX: 'num' is a hack
+# TODO: Handle cw/ccw direction.
+def draw_test(ctx, ptA, ptB=None, bondLen=30.0, direc='cw', num=5):
+	# CLEAR
+	pat = SolidPattern(1.0, 1.0, 1.0, 0.9)
+	ctx.rectangle(0,0, 500, 500)
+	ctx.set_source(pat)
+	ctx.fill()
+
+	def draw_line(ptA, ptB):
+		ctx.new_path()
+		ctx.set_source_rgb(0.0, 0.0, 0.0)
+		ctx.move_to(ptA.x, ptA.y)
+		ctx.line_to(ptB.x, ptB.y)
+		ctx.close_path()
+		ctx.stroke()
+
+	def draw_spiral(center, num, phi, r):
+		ctx.set_source_rgb(0.0, 0.0, 0.0)
+		# TODO/TEST w/o first or second postions
+		theta = 0
+		for i in range(num):
+			theta += phi
+			ctx.new_path()
+			px = ptA.x + cos(theta) * r
+			py = ptA.y + sin(theta) * r
+			ctx.move_to(ptA.x, ptA.y)
+			ctx.line_to(px, py)
+			ctx.close_path()
+			ctx.stroke()
+
+	def draw_spiral2(positions):
+		"""
+		Draw regular polygons. (WORK IN PROGRESS)
+		Input: A list of each vertex position. 
+		"""
+		# TODO: Must use actual 1st and 2nd positions. 
+		# TODO: Use matrix stacks to translate a local coord system.
+		positions = positions[:]
+
+		# In order to draw edge from last->first
+		positions.append(positions[0])
+
+		first = positions.pop(0)
+		next_ = first
+		last = 0.0
+
+		ctx.set_source_rgb(0.0, 0.0, 0.0)
+		ctx.new_path()
+		while len(positions) > 0:
+			last = next_
+			next_ = positions.pop(0)
+			ctx.move_to(last.x, last.y)
+			ctx.line_to(next_.x, next_.y)
+
+		ctx.close_path()
+		ctx.stroke()
+
+	#draw_line(ptA, ptB)
+	#draw_line(pts['o'], pts['c'])
+
+	size = int(num)
+	#d = regular_polygon(size, ptA, ptB, bondLen, direc)
+	#draw_spiral(d['o'], size, d['phi'], d['r'])
+
+	# XXX: Deprecated after positions internalized in Ring
+	#positions = regular_polygon(size, ptA, ptB, bondLen, direc)
+	#draw_spiral2(positions)
 
 
