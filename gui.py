@@ -1,3 +1,4 @@
+import random 
 import math
 from cairo import *
 import pygtk
@@ -106,11 +107,11 @@ class Window(object):
 		ctx.set_source(pat)
 		ctx.fill()
 
-		def draw_edge(ptA, ptB, xOff=100, yOff=100):
+		def draw_edge(ptA, ptB, color, xOff=100, yOff=100):
 			"""
 			JUST A TEST. More sophisticated later!
 			"""
-			ctx.set_source_rgb(0.0, 0.0, 0.0)
+			ctx.set_source_rgb(color['r'], color['g'], color['b'])
 			ctx.new_path()
 			ctx.move_to(ptA.x + xOff, ptA.y + yOff)
 			ctx.line_to(ptB.x + xOff, ptB.y + yOff)
@@ -124,6 +125,14 @@ class Window(object):
 			yOff += 100
 			for ring in group:
 				print ring
+				# XXX XXX XXX XXX COLOR AND RAND OFFSET HELP DEBUG
+				color = {
+					'r': random.uniform(0.0, 0.6),
+					'g': random.uniform(0.0, 0.6),
+					'b': random.uniform(0.0, 0.6),
+				}
+				randX = random.randint(0, 10)
+				randY = random.randint(0, 10)
 				for bond in ring.bonds:
 					bond = list(bond)
 					atomA = bond[0]
@@ -131,7 +140,7 @@ class Window(object):
 					ptA = ring.pos[ring.index(atomA)]
 					ptB = ring.pos[ring.index(atomB)]
 
-					draw_edge(ptA, ptB, xOff, yOff)
+					draw_edge(ptA, ptB, color, xOff + randX, yOff + randY)
 
 			xOff, yOff = yOff, xOff
 
