@@ -103,7 +103,7 @@ def redraw():
 		xOff, yOff = yOff, xOff
 
 # TODO: Needs rename
-def input_smiles_text(smiles, informalName=None):
+def parse_smiles_text(smiles, informalName=None):
 	"""
 	Process SMILES text into molecular information and a structure
 	diagram.
@@ -146,30 +146,35 @@ def gui_draw_callback():
 	redraw()
 
 def gui_smiles_text_callback(smiles):
-	input_smiles_text(smiles)
+	"""
+	Take form input and attempt a SMILES dictionary lookup.
+	Otherwise considered actual SMILES input.
+	"""
+	informalName = None
+	ex = get_example(smiles)
+	if ex:
+		informalName = ex[1]
+		smiles = ex[2]
+		print ">>> Using %s per input.\n" % informalName
+
+	parse_smiles_text(smiles, informalName)
 
 def main():
 	"""Main function"""
 	# Extract arguments or get random SMILES
 	smiles = None
 	informalName = None
-	if len(sys.argv) < 2:
-		ex = get_example()
+	ex = get_example(None if len(sys.argv) < 2 else sys.argv[1])
+	if not ex:
+		smiles = sys.argv[1]
+		print ">>> Using input as SMILES."
+	else:
 		informalName = ex[1]
 		smiles = ex[2]
-		print ">>> Need to supply SMILES text as argument."
-		print ">>> Using %s \"%s\" as an example.\n" % ex[1:] 
-	else:
-		ex = get_example(sys.argv[1])
-		if ex:
-			informalName = ex[1]
-			smiles = ex[2]
-			print ">>> Using %s per argument.\n" % informalName
-		else:
-			smiles = sys.argv[1]
+		print ">>> Using %s per argument.\n" % informalName
 
 	# Init GUI.
-	win = Window('Structure Diagram Generation (WIP)')
+	win = Window('Chemical Structure Diagram Generation (WIP)')
 
 	# Set globals.
 	Globals.drawable = win.drawable
@@ -182,7 +187,7 @@ def main():
 	win.smilesCallback = gui_smiles_text_callback
 
 	# Process initial data.
-	input_smiles_text(smiles, informalName)
+	parse_smiles_text(smiles, informalName)
 
 	# Run GUI.
 	win.run()

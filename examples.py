@@ -78,7 +78,7 @@ EXAMPLES = {
 				+ '[C@H]3O[C@@H](n2cnc1c(ncnc12)N)[C@H](O)[C@@H]3OP(=O)(O)O',
 		'atp': 'c1nc(c2c(n1)n(cn2)[C@H]3[C@@H]([C@@H]([C@H](O3)CO'
 			+ '[P@@](=O)(O)O[P@@](=O)(O)OP(=O)(O)O)O)O)N',
-		'luciferin': 'O=C(O)[C@@H]1NC(/SC1)=C2/S\C\3=C\C(=O)\C=C/C/3=N2',
+		'luciferin': 'O=C(O)[C@@H]1NC(/SC1)=C2/S\C\\3=C\C(=O)\C=C/C/3=N2',
 		# Drug with spiro connectivity
 		'griseofulvin':'O=C2c3c(O[C@@]21C(/OC)=C\C(=O)C[C@H]1C)c(Cl)c(OC)cc3OC',
 	},
@@ -92,6 +92,17 @@ EXAMPLES = {
 	},
 }
 
+def _build_inner_keys():
+	"""
+	Build a lookup dictionary for inner keys.
+	"""
+	innerKeys = {}
+	for outk in EXAMPLES:
+		for ink in EXAMPLES[outk]:
+			innerKeys[ink] = outk
+	return innerKeys
+
+INNER_KEYS = _build_inner_keys()
 
 def get_example(key=None):
 	"""
@@ -103,6 +114,16 @@ def get_example(key=None):
 	k2 = None # Inner key
 	val = None # SMILES value
 
+	# If no key specified, return an entirely random value.
+	if not key:
+		key = random.choice(INNER_KEYS.keys())
+		k1 = INNER_KEYS[key]
+		k2 = key
+		val = EXAMPLES[k1][k2]
+		return (k1, k2, val)
+
+	key = key.lower()
+
 	# If outer key specified, get random inner value. 
 	if key in EXAMPLES:
 		k1 = key
@@ -110,22 +131,13 @@ def get_example(key=None):
 		val = EXAMPLES[k1][k2]
 		return (k1, k2, val)
 
-	innerKeys = {}
-	for outk in EXAMPLES:
-		for ink in EXAMPLES[outk]:
-			innerKeys[ink] = outk
-
 	# If inner key specified, get exact inner value.
-	if key in innerKeys:
-		k1 = innerKeys[key]
+	if key in INNER_KEYS:
+		k1 = INNER_KEYS[key]
 		k2 = key
 		val = EXAMPLES[k1][k2]
 		return (k1, k2, val)
 	
-	# Return a random value.
-	key = random.choice(innerKeys.keys())
-	k1 = innerKeys[key]
-	k2 = key
-	val = EXAMPLES[k1][k2]
-	return (k1, k2, val)
+	# Not found.
+	return False
 

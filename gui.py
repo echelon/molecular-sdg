@@ -1,6 +1,5 @@
 import random 
 import math
-from cairo import *
 import pygtk
 pygtk.require('2.0')
 import gtk
@@ -69,8 +68,9 @@ class Window(object):
 		self.smilesCallback = None
 
 	def setSmilesLabel(self, smiles, todoRemove=None): # TODO
+		if not self.molEntry.get_text():
+			self.molEntry.set_text(smiles)
 		self.label.set_text(smiles)
-		self.molEntry.set_text(smiles)
 
 	def setInformalLabel(self, informalName):
 		self.informalNameLabel.set_text("Informal name:\n%s" 
