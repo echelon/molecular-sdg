@@ -30,6 +30,10 @@ class Window(object):
 		vbox2.show()
 		self.hbox.add(vbox2)
 
+		self.informalNameLabel = gtk.Label()
+		self.setInformalLabel(None)
+		vbox2.add(self.informalNameLabel)
+
 		lab = gtk.Label('Debug Text')
 		lab.set_padding(0, 0)
 		lab.show()
@@ -64,13 +68,18 @@ class Window(object):
 		self.drawCallback = None
 		self.smilesCallback = None
 
-	def setText(self, text, informalName=None):
-		self.label.set_text(text) # FIXME: Move?
-		self.molEntry.set_text(text) # FIXME: Move? 
+	def setSmilesLabel(self, smiles, todoRemove=None): # TODO
+		self.label.set_text(smiles)
+		self.molEntry.set_text(smiles)
+
+	def setInformalLabel(self, informalName):
+		self.informalNameLabel.set_text("Informal name:\n%s" 
+				% str(informalName))
 
 	def run(self):
 		self.drawable.show()
 		self.label.show()
+		self.informalNameLabel.show()
 		self.molEntry.show()
 		self.debugText.show()
 		self.vbox.show()
@@ -98,7 +107,7 @@ class Window(object):
 		if not self.smilesCallback:
 			print "No smiles callback set."
 			return
-		self.smilesCallback(text, None) # No informal name.
+		self.smilesCallback(text)
 
 		self.draw()
 

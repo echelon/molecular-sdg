@@ -8,6 +8,8 @@ approach at drawing that I wish to retain for the time being.
 
 At present, the code I am working on is in 'matrix.py' and 'smiles.py'.
 """
+
+# Python libs
 import sys
 import random 
 from cairo import *
@@ -37,15 +39,22 @@ class Globals(object):
 	pass
 
 def redraw():
+	"""
+	Update the image.
+	"""
+	# XXX: DO NOT CHANGE OTHER GUI COMPONENTS!
+
 	# Extract globals.
 	ringGroups = Globals.ringGroups
 	drawable = Globals.drawable
-	informalName = Globals.informalName
-	debugText = Globals.debugText
 
 	if not drawable.window:
 		# Drawable Window Not Yet Created
 		return
+
+	if not Globals.ringGroups:
+		# Ring groups not processed yet.
+		return 
 
 	ctx = drawable.window.cairo_create()
 
@@ -92,10 +101,6 @@ def redraw():
 
 		# Switch out the random spread for ring groups
 		xOff, yOff = yOff, xOff
-	
-	# Set debug text.
-	txt = "Informal Name:\n%s" % str(informalName)
-	debugText.set_text(txt)
 
 # TODO: Needs rename
 def input_smiles_text(smiles, informalName=None):
@@ -103,8 +108,11 @@ def input_smiles_text(smiles, informalName=None):
 	Process SMILES text into molecular information and a structure
 	diagram.
 	"""
+	# Extract globals
+	window = Globals.window
+	debugText = Globals.debugText
+
 	mol = smiles_to_molecule(smiles)
-	#mol.informalName = name # FIXME
 
 	#mol.print_matrix()
 
@@ -119,57 +127,64 @@ def input_smiles_text(smiles, informalName=None):
 
 	ring_analysis(ringGroups, mol)
 
-	for rg in ringGroups:
-		print rg.peelOrder
+	#for rg in ringGroups:
+	#	print rg.peelOrder
 
 	for group in ringGroups:
-		print group
+		#print group
 		construct_group(group)
 
-	# Set global information.
+	# Update global information.
 	Globals.chains = chains
 	Globals.ringGroups = ringGroups
-	Globals.informalName = informalName
 
-	# Redraw
-	redraw()
+	# Update gui with name, etc.
+	window.setSmilesLabel(smiles)
+	window.setInformalLabel(informalName)
 
 def gui_draw_callback():
 	redraw()
 
-def gui_smiles_text_callback(smiles, informalName=None):
-	input_smiles_text(smiles, informalName)
+def gui_smiles_text_callback(smiles):
+	input_smiles_text(smiles)
 
 def main():
 	"""Main function"""
-
+	# Extract arguments or get random SMILES
 	smiles = None
-	name = None
+	informalName = None
 	if len(sys.argv) < 2:
 		ex = get_example()
-		name = ex[1]
+		informalName = ex[1]
 		smiles = ex[2]
 		print ">>> Need to supply SMILES text as argument."
 		print ">>> Using %s \"%s\" as an example.\n" % ex[1:] 
 	else:
 		ex = get_example(sys.argv[1])
 		if ex:
-			name = ex[1]
+			informalName = ex[1]
 			smiles = ex[2]
-			print ">>> Using %s per argument.\n" % name
+			print ">>> Using %s per argument.\n" % informalName
 		else:
 			smiles = sys.argv[1]
 
-	# Setup GUI, callbacks...
-	win = Window('title')
+	# Init GUI.
+	win = Window('Structure Diagram Generation (WIP)')
+
+	# Set globals.
 	Globals.drawable = win.drawable
 	Globals.debugText = win.debugText
+	Globals.window = win
+	Globals.ringGroups = None
 
 	# Set callbacks.
 	win.drawCallback = gui_draw_callback
 	win.smilesCallback = gui_smiles_text_callback
 
-	win.setText(smiles, name) # TODO: Need?
+	# Process initial data.
+	input_smiles_text(smiles, informalName)
+
+	# Run GUI.
 	win.run()
 
 if __name__ == '__main__':
