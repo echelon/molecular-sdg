@@ -8,16 +8,21 @@ approach at drawing that I wish to retain for the time being.
 
 At present, the code I am working on is in 'matrix.py' and 'smiles.py'.
 """
-
 import sys
+import random 
+from cairo import *
+from math import radians, sin, cos
 
-from molecule import Molecule
-from ring import partition_rings
-
+# Parsing, misc.
+from gui import Window
 from examples import get_example
 from smiles import Smiles
 from smiles import smiles_to_molecule
 from algo.path import *
+
+# Data structures
+from molecule import Molecule
+from ring import partition_rings
 
 # Perception
 from perception.rings import *
@@ -27,31 +32,79 @@ from perception.chain import *
 from sdg.ring_analysis import *
 from sdg.ring_construction import *
 
-# XXX: Temp
-from gui import Window
+class Globals(object):
+	"""Used as a Global Dictionary."""
+	pass
 
-def main():
-	"""Main function"""
+def redraw():
+	# Extract globals.
+	ringGroups = Globals.ringGroups
+	drawable = Globals.drawable
+	informalName = Globals.informalName
+	debugText = Globals.debugText
 
-	smiles = None
-	name = None
-	if len(sys.argv) < 2:
-		ex = get_example()
-		name = ex[1]
-		smiles = ex[2]
-		print ">>> Need to supply SMILES text as argument."
-		print ">>> Using %s \"%s\" as an example.\n" % ex[1:] 
-	else:
-		ex = get_example(sys.argv[1])
-		if ex:
-			name = ex[1]
-			smiles = ex[2]
-			print ">>> Using %s per argument.\n" % name
-		else:
-			smiles = sys.argv[1]
+	if not drawable.window:
+		# Drawable Window Not Yet Created
+		return
 
+	ctx = drawable.window.cairo_create()
+
+	# CLEAR
+	pat = SolidPattern(1.0, 1.0, 1.0, 0.9)
+	ctx.rectangle(0,0, 500, 500)
+	ctx.set_source(pat)
+	ctx.fill()
+
+	def draw_edge(ptA, ptB, color, xOff=100, yOff=100):
+		"""
+		JUST A TEST. More sophisticated later!
+		"""
+		ctx.set_source_rgb(color['r'], color['g'], color['b'])
+		ctx.new_path()
+		ctx.move_to(ptA.x + xOff, ptA.y + yOff)
+		ctx.line_to(ptB.x + xOff, ptB.y + yOff)
+		ctx.close_path()
+		ctx.stroke()
+
+	xOff = 50
+	yOff = 50
+	for group in ringGroups:
+		xOff += 100
+		yOff += 100
+		for ring in group:
+			print ring
+			# XXX XXX XXX XXX COLOR AND RAND OFFSET HELP DEBUG
+			color = {
+				'r': random.uniform(0.0, 0.6),
+				'g': random.uniform(0.0, 0.6),
+				'b': random.uniform(0.0, 0.6),
+			}
+			randX = random.randint(0, 10)
+			randY = random.randint(0, 10)
+			for bond in ring.bonds:
+				bond = list(bond)
+				atomA = bond[0]
+				atomB = bond[1]
+				ptA = ring.pos[ring.index(atomA)]
+				ptB = ring.pos[ring.index(atomB)]
+
+				draw_edge(ptA, ptB, color, xOff + randX, yOff + randY)
+
+		# Switch out the random spread for ring groups
+		xOff, yOff = yOff, xOff
+	
+	# Set debug text.
+	txt = "Informal Name:\n%s" % str(informalName)
+	debugText.set_text(txt)
+
+# TODO: Needs rename
+def input_smiles_text(smiles, informalName=None):
+	"""
+	Process SMILES text into molecular information and a structure
+	diagram.
+	"""
 	mol = smiles_to_molecule(smiles)
-	mol.informalName = name
+	#mol.informalName = name # FIXME
 
 	#mol.print_matrix()
 
@@ -73,11 +126,51 @@ def main():
 		print group
 		construct_group(group)
 
-	win = Window('title')
-	win.setText(smiles)
-	win.ringGroups = ringGroups # XXX: Pass ring groups off to gui
-	win.run()
+	# Set global information.
+	Globals.chains = chains
+	Globals.ringGroups = ringGroups
+	Globals.informalName = informalName
 
+	# Redraw
+	redraw()
+
+def gui_draw_callback():
+	redraw()
+
+def gui_smiles_text_callback(smiles, informalName=None):
+	input_smiles_text(smiles, informalName)
+
+def main():
+	"""Main function"""
+
+	smiles = None
+	name = None
+	if len(sys.argv) < 2:
+		ex = get_example()
+		name = ex[1]
+		smiles = ex[2]
+		print ">>> Need to supply SMILES text as argument."
+		print ">>> Using %s \"%s\" as an example.\n" % ex[1:] 
+	else:
+		ex = get_example(sys.argv[1])
+		if ex:
+			name = ex[1]
+			smiles = ex[2]
+			print ">>> Using %s per argument.\n" % name
+		else:
+			smiles = sys.argv[1]
+
+	# Setup GUI, callbacks...
+	win = Window('title')
+	Globals.drawable = win.drawable
+	Globals.debugText = win.debugText
+
+	# Set callbacks.
+	win.drawCallback = gui_draw_callback
+	win.smilesCallback = gui_smiles_text_callback
+
+	win.setText(smiles, name) # TODO: Need?
+	win.run()
 
 if __name__ == '__main__':
 	main()
