@@ -42,19 +42,15 @@ def redraw():
 	"""
 	Update the image.
 	"""
-	# XXX: DO NOT CHANGE OTHER GUI COMPONENTS!
+	# XXX: DO NOT CHANGE OTHER GUI COMPONENTS! ONLY IMAGE
 
 	# Extract globals.
 	ringGroups = Globals.ringGroups
 	drawable = Globals.drawable
 
-	if not drawable.window:
-		# Drawable Window Not Yet Created
+	if not drawable.window or not Globals.ringGroups:
+		# Not ready
 		return
-
-	if not Globals.ringGroups:
-		# Ring groups not processed yet.
-		return 
 
 	ctx = drawable.window.cairo_create()
 
@@ -114,6 +110,10 @@ def parse_smiles_text(smiles, informalName=None):
 
 	mol = smiles_to_molecule(smiles)
 
+	if mol == Globals.molecule:
+		print "\n>>> Same molecule.\n"
+		return
+
 	#mol.print_matrix()
 
 	# Perception algorithms. 
@@ -137,6 +137,7 @@ def parse_smiles_text(smiles, informalName=None):
 	# Update global information.
 	Globals.chains = chains
 	Globals.ringGroups = ringGroups
+	Globals.molecule = mol
 
 	# Update gui with name, etc.
 	window.setSmilesLabel(smiles)
@@ -167,11 +168,11 @@ def main():
 	ex = get_example(None if len(sys.argv) < 2 else sys.argv[1])
 	if not ex:
 		smiles = sys.argv[1]
-		print ">>> Using input as SMILES."
+		print "\n>>> Using input `%s` as SMILES.\n" % smiles
 	else:
 		informalName = ex[1]
 		smiles = ex[2]
-		print ">>> Using %s per argument.\n" % informalName
+		print "\n>>> Using %s per argument.\n" % informalName
 
 	# Init GUI.
 	win = Window('Chemical Structure Diagram Generation (WIP)')
@@ -181,6 +182,7 @@ def main():
 	Globals.debugText = win.debugText
 	Globals.window = win
 	Globals.ringGroups = None
+	Globals.molecule = None
 
 	# Set callbacks.
 	win.drawCallback = gui_draw_callback

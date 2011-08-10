@@ -222,6 +222,31 @@ class Molecule(object):
 
 		self.__dict__[k] = v
 
+	def __eq__(self, other):
+		"""
+		DANGEROUS! Compare two molecules to see if they are "equal".
+		Right now, this is just a heuristic comparison and is not
+		actual equality. Determining actual equality would require a 
+		lot of work.
+		"""
+		if type(other) != Molecule:
+			return False
+		
+		if self.size != other.size:
+			return False
+
+		if self.connectMat != other.connectMat:
+			return False
+
+		if self.bondOrderMat != other.bondOrderMat:
+			return False
+
+		# FIXME: This doesn't mean two molecules are the same. 
+		# They could have different connection matrices for instance. 
+		# They may also have the same layout, but different charges...
+		# This is just a quick compare. (Harmful?)
+		return True
+
 	def print_matrix(self):
 		"""
 		Print the molecular data for debugging.
