@@ -13,7 +13,7 @@ def construct_group(ringGroup):
 	Construct the coordinates, CFS, etc. for a ring group.
 	Follows from [Helson] p~335
 	"""
-	remRings = list(ringGroup[:])
+	remRings = list(ringGroup.peelOrder[:])
 
 	# Take care of core ring
 	core = remRings.pop()
@@ -27,7 +27,7 @@ def construct_group(ringGroup):
 	# TODO: Function, "attach_fused"
 
 	assigned = [core]
-	while len(remRings) > 0:
+	while remRings:
 		ring = remRings.pop()
 
 		# Get the fusion atoms
