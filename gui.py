@@ -13,7 +13,7 @@ class Window(object):
 		self.window = gtk.Window(gtk.WINDOW_TOPLEVEL)
 		self.window.set_title(title)
 
-		self.hbox= gtk.HBox(False, 10)
+		self.hbox= gtk.HBox(False, 5)
 		self.window.add(self.hbox)
 
 		self.vbox = gtk.VBox(False, 0)
@@ -31,6 +31,7 @@ class Window(object):
 
 		self.informalNameLabel = gtk.Label()
 		self.setInformalLabel(None)
+		self.informalNameLabel.set_padding(18, 0)
 		vbox2.add(self.informalNameLabel)
 
 		lab = gtk.Label('Debug Text')
@@ -73,8 +74,11 @@ class Window(object):
 		self.label.set_text(smiles)
 
 	def setInformalLabel(self, informalName):
-		self.informalNameLabel.set_text("Informal name:\n%s" 
+		self.informalNameLabel.set_markup("<b>Informal name:</b>\n%s" 
 				% str(informalName))
+
+	def setDebugLabel(self, debugText):
+		self.debugText.set_markup(str(debugText))
 
 	def run(self):
 		self.drawable.show()

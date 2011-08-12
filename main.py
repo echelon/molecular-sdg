@@ -11,7 +11,7 @@ At present, the code I am working on is in 'matrix.py' and 'smiles.py'.
 
 # Python libs
 import sys
-import random 
+import random
 from cairo import *
 from math import radians, sin, cos
 
@@ -77,7 +77,6 @@ def redraw():
 		xOff += 100
 		yOff += 100
 		for ring in group:
-			print ring
 			# XXX XXX XXX XXX COLOR AND RAND OFFSET HELP DEBUG
 			color = {
 				'r': random.uniform(0.0, 0.6),
@@ -114,6 +113,8 @@ def parse_smiles_text(smiles, informalName=None):
 		print "\n>>> Same molecule.\n"
 		return
 
+	debugText = ""
+
 	#mol.print_matrix()
 
 	# Perception algorithms. 
@@ -130,6 +131,8 @@ def parse_smiles_text(smiles, informalName=None):
 	#for rg in ringGroups:
 	#	print rg.peelOrder
 
+	debugText += "\n<b>Number Ring Groups</b>:\n%d" % len(ringGroups)
+
 	for group in ringGroups:
 		#print group
 		construct_group(group)
@@ -142,6 +145,7 @@ def parse_smiles_text(smiles, informalName=None):
 	# Update gui with name, etc.
 	window.setSmilesLabel(smiles)
 	window.setInformalLabel(informalName)
+	window.setDebugLabel(debugText)
 
 def gui_draw_callback():
 	redraw()

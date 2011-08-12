@@ -13,7 +13,6 @@ def construct_group(ringGroup):
 	Construct the coordinates, CFS, etc. for a ring group.
 	Follows from [Helson] p~335
 	"""
-
 	remRings = list(ringGroup[:])
 
 	# Take care of core ring
@@ -50,8 +49,10 @@ def construct_group(ringGroup):
 		ring.pos[ring.index(a)] = fusionRing.pos[fusionRing.index(a)]
 		ring.pos[ring.index(b)] = fusionRing.pos[fusionRing.index(b)]
 
-		# FIXME, FIXME, FIXME
-		a, b = b, a # TODO: Need algo to decide which side to draw on
+		# Switch atoms depending on which side is being drawn.
+		# FIXME/TODO: Does not support 'ccw' drawing.
+		if ring.getDirection() == 'ccw':
+			a, b = b, a
 
 		regular_polygon(ring, atomA=a, atomB=b, bondLen=50.0, direc='cw')
 		assigned.append(ring)
@@ -61,7 +62,6 @@ def construct_group(ringGroup):
 	# 1. Get fusion atoms
 	# 2. May need to swap fusion atoms to ensure direction still CW
 	# 3. Give positions. 
-
 
 # TODO for regular_polygon: handle cw/ccw. Still not sure how it works.
 def regular_polygon(ring, atomA=None, atomB=None, bondLen=100.0, direc='cw'):

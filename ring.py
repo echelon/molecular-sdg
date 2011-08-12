@@ -14,7 +14,7 @@ from util.enum import enum
 
 """
 Ring types are discovered during ring peeling. As each ring is peeled
-from the ring group, it is assigned one of the types below. 
+from the ring group, it is assigned one of the types below.
 """
 RING_TYPES = enum(
 	'CORE', 		# Last remaining ring (tractable case)
@@ -27,12 +27,14 @@ RING_TYPES = enum(
 )
 
 class Point(object):
-	"""Represents a 2D point"""
-	def __init__(self, x, y):
+	"""Represents a 2D position."""
+	def __init__(self, x=None, y=None):
 		self.x = x
 		self.y = y
 	def __str__(self):
-		return "pt(%f, %f)" % (self.x, self.y)
+		x = 'N' if self.x == None else str(self.x)
+		y = 'N' if self.y == None else str(self.y)
+		return "pt(%s, %s)" % (x, y)
 	def __repr__(self):
 		return str(self)
 
@@ -44,15 +46,15 @@ class Ring(tuple):
 	Also assists in processing tasks.
 	"""
 
-	def __new__(cls, path):
+	def __new__(cls, path, positions=None):
 		"""
 		Build tuple subclass instance. The underlying tuple holds the
-		ring path itself, so we do some cleanup to ensure each atom 
-		only occurs once. 
+		ring path itself, so we do some cleanup to ensure each atom
+		only occurs once.
 
 		The start and end atom are bonded. (Technically, rings are also
-		undirected cycles. There is no real 'start' or 'end', or even 
-		'direction'. 
+		undirected cycles. There is no real 'start' or 'end', or even
+		'direction'.
 		"""
 		def build_path(path):
 			"""Remove the end atom if it is also the start atom."""
@@ -64,7 +66,7 @@ class Ring(tuple):
 		# TODO: Throw exception on twice-included atoms?
 		return tuple.__new__(cls, build_path(path))
 
-	def __init__(self, path):
+	def __init__(self, path, positions=None):
 		"""
 		Ring Constructor
 		Must specify the atom cycle that constitutes the ring.
@@ -88,15 +90,84 @@ class Ring(tuple):
 		# for bridged rings easy. 
 		self.bonds = build_bonds(self.ringPath)
 
+		# Assigned ring group and in-group ID/offset assigned by
+		# RingGroup.
+		self.group = None
+		self.groupOffset = None
+
 		# The type of ring (elucidated during ring peeling).
 		# TODO: rename peelStrategy.
 		self.type = RING_TYPES.NONE
 
 		# Ring-Local coordinate position of every atom in the ring.
-		self.pos = [None for x in range(len(self[:]))]
+		self.pos = None
+
+		if positions and len(self) == len(positions):
+			self.pos = positions
+		else:
+			self.pos = [Point() for x in range(len(self[:]))]
 
 		# Ring-Local CFS (in radians) for every atom in the ring.
 		self.cfs = [{'hi':0, 'lo':0} for x in range(len(self[:]))]
+
+	def getDirection(self):
+		"""Determine which direction the ring is directed."""
+		# FIXME: Somewhat expensive?
+		a = self[0]
+		b = self[1]
+
+		seq = self.sequence('cw')
+		ap2 = seq.index(a)
+		bp2 = seq.index(b)
+
+		if (ap2 + 1) % len(self) == bp2:
+			return 'cw'
+		return 'ccw'
+
+	def sequence(self, direc='cw'):
+		"""
+		Reorder the ring clockwise (cw) or counter-clockwise (ccw).
+
+		Input: direction ('cw' or 'ccw')
+		Output: new Ring with:
+			* reordered atoms
+			* reordered Positions (references)
+		"""
+		# FIXME: Simplify
+		if direc not in ['cw', 'ccw']:
+			raise Exception, "Invalid sequence direction, `%s`." % direc
+
+		atoms = self[:]
+		sz = len(self)
+
+		# Get atom with lowest Y position.
+		lowY = None
+		lowYPos = 0 # Defaults to 0
+		for i in range(len(self)):
+			y = self.pos[i].y
+			if not y:
+				continue
+			if not lowY or y < lowY:
+				lowY = y
+				lowYPos = i
+
+		i = lowYPos
+		initialI = i
+		path = []
+		positions = []
+
+		if direc == 'cw':
+			while len(path) < sz:
+				path.append(atoms[i])
+				positions.append(self.pos[i])
+				i = (i + 1) % sz # Next: Left atom
+		else:
+			while len(path) < sz:
+				path.append(atoms[i])
+				positions.append(self.pos[i])
+				i = (i - 1) % sz # Next: Right atom
+
+		return Ring(path, positions)
 
 	# TODO: Deprecated. Move into relevant module.
 	def isCentralRing(self, ringList):
@@ -104,7 +175,7 @@ class Ring(tuple):
 		Determine ring centrality.
 		If a ring is central, its removal will partition the remining
 		rings. We want to peel the rings on the molecule extremety
-		first. 
+		first.
 
 		This algorithm is modified from [Helson] in order to compensate
 		for molecules such as PhPh-PhPhPh.
@@ -117,9 +188,9 @@ class Ring(tuple):
 		pos = None
 		for i in range(len(rings)):
 			if rings[i] == self:
-				pos = i 
+				pos = i
 				break
-		
+
 		if pos != None:
 			rings.pop(pos)
 			numRings -= 1
@@ -248,7 +319,7 @@ class RingGroup(tuple):
 	Eg. "PhPh-C-Ph-C-PhPhPh" contains 3 ring groups.
 
 	See partition_rings() in this module for the function that creates
-	ring groups. 
+	ring groups.
 
 	This is a tuple subclass, so Pythonic usage should work well:
 
@@ -270,12 +341,12 @@ class RingGroup(tuple):
 
 	def __init__(self, rings, rgId=None):
 		"""
-		Input: 
+		Input:
 		* a list of Ring objects (handled by __new__), and is the
 		  tuple data
 		* an identifier (optional)
 		"""
-		
+
 		# An arbitrary ID that the grouping algorithm assigns. Should
 		# be unique for every ring group in the molecule, but it is 
 		# not mandatory.
@@ -290,6 +361,11 @@ class RingGroup(tuple):
 		self.spiroTo = [[] for x in range(len(self))]
 		self.fusedTo = [[] for x in range(len(self))]
 		self.bridgedTo = [[] for x in range(len(self))]
+
+		# Assign in-group offsets to each ring.
+		for i in range(len(self)):
+			rings[i].group = self
+			rings[i].groupOffset = i
 
 		# Build fused table.
 		for i in range(len(self)):
