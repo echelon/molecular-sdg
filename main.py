@@ -12,6 +12,7 @@ At present, the code I am working on is in 'matrix.py' and 'smiles.py'.
 # Python libs
 import sys
 import random
+import cairo
 from cairo import *
 from math import radians, sin, cos
 
@@ -48,15 +49,76 @@ def redraw():
 	ringGroups = Globals.ringGroups
 	drawable = Globals.drawable
 
+	# TODO: Update for chains, etc.
+	def get_molecule_dimensions(ringGroups):
+		"""From atom data, get the canvas size, (width, height)"""
+		maxX = -5000 # These should be out of bounds.
+		maxY = -5000
+		minX = 100000000
+		minY = 100000000
+		for group in ringGroups:
+			for ring in group:
+				for i in range(len(ring)):
+					x = ring.pos[i].x
+					y = ring.pos[i].y
+					if x > maxX:
+						maxX = x
+					elif x < minX:
+						minX = x
+					if y > maxY:
+						maxY = y
+					elif y < minY:
+						minY = y
+		
+		width = maxX - minX
+		height = maxY - minY
+		return (width, height)
+
+	# TODO: Update for chains, etc.
+	def get_average_position(ringGroups):
+		xSum = 0
+		ySum = 0
+		atoms = []
+		for group in ringGroups:
+			for ring in group:
+				for i in range(len(ring)):
+					atom = ring[i]
+					if atom in atoms:
+						continue
+					atoms.append(atom)
+					x = ring.pos[i].x
+					y = ring.pos[i].y
+					if x != None:
+						xSum += x
+					if y != None:
+						ySum += y
+
+		xAvg = xSum / len(atoms)
+		yAvg = ySum / len(atoms)
+		return (int(xAvg), int(yAvg))
+
 	if not drawable.window or not Globals.ringGroups:
 		# Not ready
 		return
 
 	ctx = drawable.window.cairo_create()
 
+	print dir(drawable.window)
+
+	size = drawable.window.get_size()
+
+	# Size the window
+	center = get_average_position(ringGroups)
+	#drawable.set_size_request(int(dimensions[0]), int(dimensions[1]))
+
+	print center
+	mat = cairo.Matrix(1, 0, 0, 1, 
+			size[0]/2 + center[0]*-1, size[1]/2 + center[1]*-1)
+	ctx.transform(mat)
+	
 	# CLEAR
-	pat = SolidPattern(1.0, 1.0, 1.0, 0.9)
-	ctx.rectangle(0,0, 500, 500)
+	pat = SolidPattern(1.0, 1.0, 1.0, 1.0)
+	ctx.rectangle(-8000, -8000, 800000, 800000)
 	ctx.set_source(pat)
 	ctx.fill()
 
@@ -66,16 +128,18 @@ def redraw():
 		"""
 		ctx.set_source_rgb(color['r'], color['g'], color['b'])
 		ctx.new_path()
-		ctx.move_to(ptA.x + xOff, ptA.y + yOff)
-		ctx.line_to(ptB.x + xOff, ptB.y + yOff)
+		#ctx.move_to(ptA.x + xOff, ptA.y + yOff)
+		#ctx.line_to(ptB.x + xOff, ptB.y + yOff)
+		ctx.move_to(ptA.x, ptA.y)
+		ctx.line_to(ptB.x, ptB.y)
 		ctx.close_path()
 		ctx.stroke()
 
-	xOff = 50
-	yOff = 50
+	xOff = 0
+	yOff = 0
 	for group in ringGroups:
-		xOff += 100
-		yOff += 100
+		#xOff += 100
+		#yOff += 100
 		for ring in group:
 			# XXX XXX XXX XXX COLOR AND RAND OFFSET HELP DEBUG
 			color = {
@@ -83,8 +147,10 @@ def redraw():
 				'g': random.uniform(0.0, 0.6),
 				'b': random.uniform(0.0, 0.6),
 			}
-			randX = random.randint(0, 10)
-			randY = random.randint(0, 10)
+			#randX = random.randint(0, 10)
+			#randY = random.randint(0, 10)
+			randX = 0
+			randY = 0
 			for bond in ring.bonds:
 				bond = list(bond)
 				atomA = bond[0]
@@ -92,7 +158,8 @@ def redraw():
 				ptA = ring.pos[ring.index(atomA)]
 				ptB = ring.pos[ring.index(atomB)]
 
-				draw_edge(ptA, ptB, color, xOff + randX, yOff + randY)
+				#draw_edge(ptA, ptB, color, xOff + randX, yOff + randY)
+				draw_edge(ptA, ptB, color)
 
 		# Switch out the random spread for ring groups
 		xOff, yOff = yOff, xOff
@@ -131,7 +198,8 @@ def parse_smiles_text(smiles, informalName=None):
 	#for rg in ringGroups:
 	#	print rg.peelOrder
 
-	debugText += "\n<b>Number Ring Groups</b>:\n%d" % len(ringGroups)
+	debugText += "\n<b>Ring Groups</b>: %d" % len(ringGroups)
+	debugText += "\n<b>Rings</b>: %d" % len(rings)
 
 	for group in ringGroups:
 		#print group
