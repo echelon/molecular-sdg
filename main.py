@@ -48,6 +48,7 @@ def redraw():
 	# Extract globals.
 	ringGroups = Globals.ringGroups
 	drawable = Globals.drawable
+	window = Globals.window
 
 	# TODO: Update for chains, etc.
 	def get_molecule_dimensions(ringGroups):
@@ -103,18 +104,9 @@ def redraw():
 
 	ctx = drawable.window.cairo_create()
 
-	print dir(drawable.window)
-
-	size = drawable.window.get_size()
-
 	# Size the window
+	size = drawable.window.get_size()
 	center = get_average_position(ringGroups)
-	#drawable.set_size_request(int(dimensions[0]), int(dimensions[1]))
-
-	print center
-	mat = cairo.Matrix(1, 0, 0, 1, 
-			size[0]/2 + center[0]*-1, size[1]/2 + center[1]*-1)
-	ctx.transform(mat)
 	
 	# CLEAR
 	pat = SolidPattern(1.0, 1.0, 1.0, 1.0)
@@ -122,24 +114,28 @@ def redraw():
 	ctx.set_source(pat)
 	ctx.fill()
 
-	def draw_edge(ptA, ptB, color, xOff=100, yOff=100):
+	# Draw in center of context
+	mat = cairo.Matrix(1, 0, 0, 1, 
+			size[0]/2 + center[0]*-1, size[1]/2 + center[1]*-1)
+	ctx.transform(mat)
+
+	# Scale the image
+	scale = window.getScale()
+	mat = cairo.Matrix(scale, 0, 0, scale, 0, 0)
+	ctx.transform(mat)
+
+	def draw_edge(ptA, ptB, color, xOff=0, yOff=0):
 		"""
 		JUST A TEST. More sophisticated later!
 		"""
 		ctx.set_source_rgb(color['r'], color['g'], color['b'])
 		ctx.new_path()
-		#ctx.move_to(ptA.x + xOff, ptA.y + yOff)
-		#ctx.line_to(ptB.x + xOff, ptB.y + yOff)
-		ctx.move_to(ptA.x, ptA.y)
-		ctx.line_to(ptB.x, ptB.y)
+		ctx.move_to(ptA.x + xOff, ptA.y + yOff)
+		ctx.line_to(ptB.x + xOff, ptB.y + yOff)
 		ctx.close_path()
 		ctx.stroke()
 
-	xOff = 0
-	yOff = 0
 	for group in ringGroups:
-		#xOff += 100
-		#yOff += 100
 		for ring in group:
 			# XXX XXX XXX XXX COLOR AND RAND OFFSET HELP DEBUG
 			color = {
@@ -147,10 +143,8 @@ def redraw():
 				'g': random.uniform(0.0, 0.6),
 				'b': random.uniform(0.0, 0.6),
 			}
-			#randX = random.randint(0, 10)
-			#randY = random.randint(0, 10)
-			randX = 0
-			randY = 0
+			randX = 0 #random.randint(0, 20)
+			randY = 0 #random.randint(0, 20)
 			for bond in ring.bonds:
 				bond = list(bond)
 				atomA = bond[0]
@@ -158,11 +152,7 @@ def redraw():
 				ptA = ring.pos[ring.index(atomA)]
 				ptB = ring.pos[ring.index(atomB)]
 
-				#draw_edge(ptA, ptB, color, xOff + randX, yOff + randY)
-				draw_edge(ptA, ptB, color)
-
-		# Switch out the random spread for ring groups
-		xOff, yOff = yOff, xOff
+				draw_edge(ptA, ptB, color, randX, randY)
 
 # TODO: Needs rename
 def parse_smiles_text(smiles, informalName=None):

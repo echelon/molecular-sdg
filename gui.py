@@ -47,7 +47,7 @@ class Window(object):
 		self.drawable.set_size_request(500, 500)
 		self.vbox.add(self.drawable)
 
-		adj = gtk.Adjustment(0.0, 0.0, 360.0, 1.0, 10.0, 1.0)
+		adj = gtk.Adjustment(1.0, 0.01, 2.0)
 		self.scale = gtk.HScale(adj)
 		self.vbox.add(self.scale)
 
@@ -80,6 +80,9 @@ class Window(object):
 	def setDebugLabel(self, debugText):
 		self.debugText.set_markup(str(debugText))
 
+	def getScale(self):
+		return self.scale.get_value()
+
 	def run(self):
 		self.drawable.show()
 		self.label.show()
@@ -96,9 +99,7 @@ class Window(object):
 		self.draw()
 
 	def scaleChanged(self, scale):
-		angle = scale.get_value()
-		angle = round(angle)
-		pass # TODO
+		self.draw()
 
 	def spinChanged(self, spin):
 		size = spin.get_value()
