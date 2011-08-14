@@ -41,16 +41,25 @@ EXAMPLES = {
 
 	# Polycyclic Aromatic Hydrocarbons
 	'pah': {
-		'naphthalene': 'c1cccc2c1cccc2', # 2
-		'acenaphthene': 'c2cc1cccc3c1c(c2)CC3', # 3
-		'chrysene': 'c1ccc2c(c1)ccc3c2ccc4c3cccc4', # 4
+		'naphthalene': 'c1cccc2c1cccc2', # 2 linear
+		'anthracene': 'c3ccc2cc1ccccc1cc2c3', # 3 linear
+		'tetracene': 'c34cc2cc1ccccc1cc2cc3cccc4', # 4 linear
+		'acenaphthene': 'c2cc1cccc3c1c(c2)CC3', # 3 pyramidal
+		'chrysene': 'c1ccc2c(c1)ccc3c2ccc4c3cccc4', # 4 bent
+		'pyrene': 'c1cc2ccc3cccc4c3c2c(c1)cc4', # 4 cluster
+	},
+
+	# Advanced Polycyclic Aromatic Hydrocarbons
+	'pah2': {
 		'dibenz(a,h)anthracene': 'c1ccc2c(c1)ccc3c2cc4ccc5ccccc5c4c3', # 5
-		'benzo[k]fluoranthene': 'c1ccc2cc-3c(cc2c1)-c4cccc5c4c3ccc5', # 5
 		'coronene': 'c1cc2ccc3ccc4ccc5ccc6ccc1c7c2c3c4c5c67', # 'superbenzene'
 		'dicoronylene': 'c1cc2ccc3cc4c9cc%10ccc%11ccc%12ccc%13ccc%14cc(c5cc6'
 				+ 'ccc7ccc1c8c2c3c(c45)c6c78)c9c%15c%10c%11c%12c%13c%14%15',
+		# XXX: Should 'benzo...' be bridged?
+		'benzo[k]fluoranthene': 'c1ccc2cc-3c(cc2c1)-c4cccc5c4c3ccc5', # 5
+		'dibenz(a,h)anthracene': 'c1ccc2c(c1)ccc3c2cc4ccc5ccccc5c4c3', # 5
 	},
-	
+
 	# Multiple ring groups
 	'multiring': {
 		'...trichloro-dibenzene': 'ClC(Cl)(Cl)C(c1ccccc1)c2ccccc2',
