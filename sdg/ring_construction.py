@@ -27,6 +27,7 @@ def construct_group(ringGroup):
 	# TODO: Function, "attach_fused"
 
 	assigned = [core]
+
 	while remRings:
 		ring = remRings.pop()
 
@@ -49,19 +50,28 @@ def construct_group(ringGroup):
 		ring.pos[ring.index(a)] = fusionRing.pos[fusionRing.index(a)]
 		ring.pos[ring.index(b)] = fusionRing.pos[fusionRing.index(b)]
 
+		# XXX/TEMPORARY -- THIS IS JUST FOR DEBUG
+		ring.fusionAtom[ring.index(a)] = True
+		ring.fusionAtom[ring.index(b)] = True
+		fusionRing.fusionAtom[fusionRing.index(a)] = True
+		fusionRing.fusionAtom[fusionRing.index(b)] = True
+		# END XXX/TEMPORARY -- THIS IS JUST FOR DEBUG
+
 		# Switch atoms depending on which side is being drawn.
 		# FIXME/TODO: Does not support 'ccw' drawing.
+		#seq = ring.sequence('cw')
+		#aPos = seq.index(a)
+		#bPos = seq.index(b)
+		#if (aPos + 1) % len(seq) != bPos:
 		if ring.getDirection() == 'ccw':
+			ring.swapped = True
+			#print ">> SWITCH DIRECTION"
 			a, b = b, a
 
 		regular_polygon(ring, atomA=a, atomB=b, bondLen=50.0, direc='cw')
 		assigned.append(ring)
 
 	return
-	# IN LOOP:
-	# 1. Get fusion atoms
-	# 2. May need to swap fusion atoms to ensure direction still CW
-	# 3. Give positions. 
 
 # TODO for regular_polygon: handle cw/ccw. Still not sure how it works.
 def regular_polygon(ring, atomA=None, atomB=None, bondLen=100.0, direc='cw'):
@@ -87,7 +97,7 @@ def regular_polygon(ring, atomA=None, atomB=None, bondLen=100.0, direc='cw'):
 
 	# TODO: Update to ensure proper cw/ccw handling
 
-	ptA = None
+	ptA = None # Point objects
 	ptB = None
 	idxA = 0 # Ring index of the atom, that is ring[idx]
 	idxB = 0
@@ -169,26 +179,4 @@ def regular_polygon(ring, atomA=None, atomB=None, bondLen=100.0, direc='cw'):
 		theta += phi # XXX: CW
 
 	return True
-
-"""
-# Entirely TODO
-def open_polygon():
-	Before implementing this, try doing:
-
-		Drawing:
-			* Cairo
-
-		Gui:
-			* Gtk in /gui
-			* Later: Do MVC pattern. Maybe in /mvc
-			* Much later: GTK & QT /gui/gtk and /gui/qt, or handle w/ views
-
-		Core datatypes: (LATER)
-			* Ring, RingSystem, RingGroup.
-			* Chain
-			* Molecule
-			* Matrix
-
-	pass
-"""
 

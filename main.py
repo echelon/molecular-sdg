@@ -143,8 +143,8 @@ def redraw():
 				'g': random.uniform(0.0, 0.6),
 				'b': random.uniform(0.0, 0.6),
 			}
-			randX = 0 #random.randint(0, 20)
-			randY = 0 #random.randint(0, 20)
+			randX = random.randint(0, 10)
+			randY = random.randint(0, 10)
 			for bond in ring.bonds:
 				bond = list(bond)
 				atomA = bond[0]
@@ -188,12 +188,21 @@ def parse_smiles_text(smiles, informalName=None):
 	#for rg in ringGroups:
 	#	print rg.peelOrder
 
-	debugText += "\n<b>Ring Groups</b>: %d" % len(ringGroups)
-	debugText += "\n<b>Rings</b>: %d" % len(rings)
+	debugText += "<b>Informal Name</b>:\n%s\n\n" % informalName
+	debugText += "<b>Ring Groups</b>: %d\n" % len(ringGroups)
+	debugText += "<b>Rings</b>: %d\n\n" % len(rings)
+	debugText += "<b><u>Constructed Ring Groups</u></b>\n"
 
 	for group in ringGroups:
-		#print group
 		construct_group(group)
+		# XXX TEMP DEBUG
+		debugText += "\n<i>Ring Group (in Peel Order)</i>\n"
+		i = 0
+		out = group.peelOrder[:]
+		out.reverse()
+		for ring in out:
+			debugText += "\n%d . %s" % (i, str(ring))
+			i += 1
 
 	# Update global information.
 	Globals.chains = chains

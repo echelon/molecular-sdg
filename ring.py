@@ -32,8 +32,8 @@ class Point(object):
 		self.x = x
 		self.y = y
 	def __str__(self):
-		x = 'N' if self.x == None else str(self.x)
-		y = 'N' if self.y == None else str(self.y)
+		x = 'N' if self.x == None else str("%0.1f" % self.x)
+		y = 'N' if self.y == None else str("%0.1f" % self.y)
 		return "pt(%s, %s)" % (x, y)
 	def __repr__(self):
 		return str(self)
@@ -109,6 +109,11 @@ class Ring(tuple):
 
 		# Ring-Local CFS (in radians) for every atom in the ring.
 		self.cfs = [{'hi':0, 'lo':0} for x in range(len(self[:]))]
+
+		# XXX/TEMPORARY DEBUG
+		self.fusionAtom = [False for x in range(len(self))]
+		self.swapped = False
+		# END XXX/TEMPORARY DEBUG
 
 	def getDirection(self):
 		"""Determine which direction the ring is directed."""
@@ -308,9 +313,17 @@ class Ring(tuple):
 	def __str__(self):
 		"""Returns string representation of the object."""
 		st = repr(self)
+		# XXX/TEMPORARY -- DEBUG MARKUP
+		if self.swapped:
+			st += "<b><i>**</i></b>"
 		st += "\n Positions:\n"
 		for i in range(len(self.pos)):
-			st += "   * %d : %s\n" % (self[i], str(self.pos[i]))
+			#st += "   * %d : %s\n" % (self[i], str(self.pos[i]))
+			# XXX/TEMPORARY -- DEBUG MARKUP
+			if self.fusionAtom[i]:
+				st += "   * <u>%d : %s</u>\n" % (self[i], str(self.pos[i]))
+			else:
+				st += "   * %d : %s\n" % (self[i], str(self.pos[i]))
 		return st
 
 class RingGroup(tuple):

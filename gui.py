@@ -13,36 +13,34 @@ class Window(object):
 		self.window = gtk.Window(gtk.WINDOW_TOPLEVEL)
 		self.window.set_title(title)
 
-		self.hbox= gtk.HBox(False, 5)
+		self.hbox= gtk.HBox(False, 0)
+		self.hbox.set_spacing(0)
 		self.window.add(self.hbox)
 
 		self.vbox = gtk.VBox(False, 0)
 		self.hbox.add(self.vbox)
+
 
 		self.label = gtk.Label()
 		self.vbox.add(self.label)
 
 		self.molEntry = gtk.Entry(max=0)
 		self.vbox.add(self.molEntry)
+		
+		scroll = gtk.ScrolledWindow()
+		scroll.show()
+		scroll.set_border_width(10)
+		self.hbox.add(scroll)
 
-		vbox2 = gtk.VBox(False, 10)
-		vbox2.show()
-		self.hbox.add(vbox2)
-
-		self.informalNameLabel = gtk.Label()
-		self.setInformalLabel(None)
-		self.informalNameLabel.set_padding(18, 0)
-		vbox2.add(self.informalNameLabel)
-
-		lab = gtk.Label('Debug Text')
-		lab.set_padding(0, 0)
-		lab.show()
-		vbox2.add(lab)
+		self.informalNameLabel = gtk.Label() # TODO: Remove.
 
 		self.debugText = gtk.Label()
-		self.debugText.set_padding(20, 10)
-		vbox2.add(self.debugText)
-		
+		self.debugText.set_padding(0, 0)
+		scroll.add_with_viewport(self.debugText)
+		scroll.set_size_request(300, 100) # Min size
+		#print scroll.get_placement()
+		#scroll.set_placement(gtk.CORNER_BOTTOM_RIGHT)
+
 		self.drawable = gtk.DrawingArea()
 		self.drawable.set_size_request(500, 500)
 		self.vbox.add(self.drawable)
