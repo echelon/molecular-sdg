@@ -54,9 +54,15 @@ class Window(object):
 		spin.show()
 		self.vbox.add(spin)
 
+		def exitkey(key):
+			if key == gtk.keysyms.Escape:
+				gtk.main_quit()
+			return False # Bubble event
+
 		# Callbacks
 		self.window.connect('destroy', lambda w: gtk.main_quit())
-		self.window.connect('delete_event', lambda x, y: gtk.main_quit())
+		self.window.connect('delete_event', lambda w, e: gtk.main_quit())
+		self.window.connect('key-press-event', lambda w, e: exitkey(e.keyval))
 		self.drawable.connect('expose-event', self.expose)
 		self.molEntry.connect('activate', self.smilesChanged)
 		self.scale.connect('value-changed', self.scaleChanged)
