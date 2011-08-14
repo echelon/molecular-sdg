@@ -262,8 +262,11 @@ def main():
 	# Process initial data.
 	parse_smiles_text(smiles, informalName)
 
-	# Run GUI.
-	win.run()
+	try:
+		# Run GUI.
+		win.run()
+	except KeyboardInterrupt:
+		print ""	
 
 if __name__ == '__main__':
 	main()

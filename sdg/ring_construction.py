@@ -8,6 +8,10 @@ import sys
 
 from ring import RING_TYPES, Point
 
+# TODO: Bridged ring positioning
+# TODO: Spiro ring positioning
+# FIXME: cw/ccw direction handling (how does it work?)
+
 def construct_group(ringGroup):
 	"""
 	Construct the coordinates, CFS, etc. for a ring group.
@@ -21,7 +25,9 @@ def construct_group(ringGroup):
 		raise Exception, "Last Ring from Ring Peeling is not Core!"
 
 	# Assign points for core (using CW)
-	regular_polygon(core, bondLen=50.0, direc='cw')
+	positions = regular_polygon(core, bondLen=50.0, direc='cw')
+	for i in range(len(positions)):
+		core.pos[i] = positions[i]
 
 	# Work on remaining rings.
 	# TODO: Function, "attach_fused"
@@ -64,12 +70,71 @@ def construct_group(ringGroup):
 		#bPos = seq.index(b)
 		#if (aPos + 1) % len(seq) != bPos:
 		if ring.getDirection() == 'ccw':
-			ring.swapped = True
-			#print ">> SWITCH DIRECTION"
+			ring.swapped = True # XXX/TEMPORARY: BOOL IS DEBUG ONLY
+			print "\t>> SWITCH DIRECTION"
 			a, b = b, a
 
-		regular_polygon(ring, atomA=a, atomB=b, bondLen=50.0, direc='cw')
+		positions = regular_polygon(ring, atomA=a, atomB=b, 
+									bondLen=50.0, direc='cw')
+
+		# Map positions.
+		aPos = ring.index(a)
+		bPos = ring.index(b)
+
+		aPtPos = None
+		bPtPos = None
+		for i in range(len(positions)):
+			if positions[i] == ring.pos[aPos]:
+				aPtPos = i
+			if positions[i] == ring.pos[bPos]:
+				bPtPos = i
+
+		try: 
+
+			rDirec = False # Left
+			if (aPos + 1) % len(ring) != bPos:
+				rDirec = True # Right
+
+			pDirec = False # Left
+			if (aPtPos + 1) % len(positions) != bPtPos:
+				pDirec = False # Right
+
+		except:
+			print "========================================"
+			print "======== Mapping Positions to Ring ====="
+			print "Fusion Atoms: %d and %d" % (a, b)
+			print "Indices: %d and %d" % (aPos, bPos)
+			print "Map Points: "
+			print "\t", 
+			print aPtPos
+			print "\t", 
+			print bPtPos
+			print ""
+			print "Positions Generated: "
+			print positions
+			print ""
+			print "Supposed to have included:"
+			print "Position A: %s" % ring.pos[aPos]
+			print "Position B: %s" % ring.pos[bPos]
+			print ""
+
+			sys.exit()
+			
+		if rDirec == pDirec:
+			for i in range(len(ring)):
+				ri = (aPos + i) % len(ring)
+				pi = (aPtPos + i) % len(ring)
+				ring.pos[ri] = positions[pi]
+
+		else:
+			for i in range(len(ring)):
+				ri = (aPos + i) % len(ring)
+				pi = (aPtPos - i) % len(ring) # XXX: Note sign
+				ring.pos[ri] = positions[pi]
+		
 		assigned.append(ring)
+
+		#sys.exit()
 
 	return
 
@@ -103,13 +168,22 @@ def regular_polygon(ring, atomA=None, atomB=None, bondLen=100.0, direc='cw'):
 	idxB = 0
 
 	# If atoms are not specified, this is probably a core ring, and we
-	# are free to align the ring with the coordinate system. 
+	# are free to align the ring with the coordinate system. All other
+	# rings should be looked up in the ring index.
 
 	if atomA != None and atomB != None:
 		idxA = ring.index(atomA)
 		idxB = ring.index(atomB)
 		ptA = ring.pos[idxA]
 		ptB = ring.pos[idxB]
+		"""
+		print "=======================================\n"
+		print "Atoms: %d, %d" % (atomA, atomB)
+		print "Indices: %d, %d" % (idxA, idxB)
+		print "Position 1: %s" % str(ptA)
+		print "Position 2: %s" % str(ptB)
+		print ""
+		"""
 	else:
 		idxA = 0
 		# TODO: is this correct cw/ccw handling?
@@ -162,6 +236,7 @@ def regular_polygon(ring, atomA=None, atomB=None, bondLen=100.0, direc='cw'):
 	theta = 0
 	if adj == 0.0:
 		# TODO: Verify
+		print "Must use predefined angle." # XXX DEBUG
 		if opp >= 0:
 			theta = pi * 1/2
 		else:
@@ -169,14 +244,39 @@ def regular_polygon(ring, atomA=None, atomB=None, bondLen=100.0, direc='cw'):
 	else:
 		theta = atan(opp/adj)
 
-	# Calculate the positions of each atom
+	if not atomA or not atomB: # XXX: DEBUG
+		atomA = 0 # XXX DEBUG
+		atomB = 0 # XXX DEBUG
+
+	"""
+	print "-----------"
+	print "Old:"
+	print "%s idx: %d atom: %d" % (str(ptA), idxA, atomA)
+	print "%s idx: %d atom: %d" % (str(ptB), idxB, atomB)
+	print "-----------"
+	print ""
+	print "Point O: %s" % str(ptO) # CORRECT
+	print "R: %f" % r
+	print ""
+	"""
+
+	# Calculate the atom positions in the ring.
 	i = idxA
+	positions = []
 	for x in range(len(ring)):
 		px = ptO.x + cos(theta) * r
 		py = ptO.y + sin(theta) * r
-		ring.pos[i] = Point(px, py)
+		positions.append(Point(px, py))
+
+		"""	
+		print "Angle: %f" % degrees(theta)
+		print "Point: %s" % str(ring.pos[i])
+		print "Index: %d Atom: %d" % (i, ring[i])
+		print ""
+		"""
+
 		i = (i + 1) % len(ring)
 		theta += phi # XXX: CW
 
-	return True
+	return positions
 
