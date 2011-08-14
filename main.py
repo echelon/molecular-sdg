@@ -143,8 +143,10 @@ def redraw():
 				'g': random.uniform(0.0, 0.6),
 				'b': random.uniform(0.0, 0.6),
 			}
-			randX = random.randint(0, 10)
-			randY = random.randint(0, 10)
+			#randX = random.randint(0, 10)
+			#randY = random.randint(0, 10)
+			randX = 0
+			randY = 0
 			for bond in ring.bonds:
 				bond = list(bond)
 				atomA = bond[0]
