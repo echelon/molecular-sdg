@@ -119,6 +119,9 @@ class Ring(tuple):
 		else:
 			self.pos = [Point() for x in range(len(self[:]))]
 
+		# Center position (for debug)
+		self.centerPos = Point()
+
 		# Ring-Local CFS (in radians) for every atom in the ring.
 		self.cfs = [{'hi':0, 'lo':0} for x in range(len(self[:]))]
 
@@ -129,17 +132,21 @@ class Ring(tuple):
 
 	def getDirection(self):
 		"""Determine which direction the ring is directed."""
-		# FIXME: Somewhat expensive?
-		a = self[0]
-		b = self[1]
+		# Based on the Convex Hull problem:
+		# http://en.wikipedia.org/wiki/Graham_scan
+		def ccw(p1, p2, p3):
+			d1 = (p2.x - p1.x) * (p3.y - p1.y)
+			d2 = (p2.y - p1.y) * (p3.x - p1.x)
+			return d1 - d2
 
-		seq = self.sequence('cw')
-		ap2 = seq.index(a)
-		bp2 = seq.index(b)
+		def direc(val):
+			if val < 0:
+				return 'ccw'
+			if val > 0:
+				return 'cw'
+			return 'colinear'
 
-		if (ap2 + 1) % len(self) == bp2:
-			return 'cw'
-		return 'ccw'
+		return direc(ccw(self.pos[0], self.pos[1], self.pos[2]))
 
 	def sequence(self, direc='cw'):
 		"""
@@ -328,6 +335,8 @@ class Ring(tuple):
 		# XXX/TEMPORARY -- DEBUG MARKUP
 		if self.swapped:
 			st += "<b><i>**</i></b>"
+		st += "\n Center: %s" % self.centerPos
+		st += "\n Direction: %s\n" % self.getDirection()
 		st += "\n Positions:\n"
 		for i in range(len(self.pos)):
 			#st += "   * %d : %s\n" % (self[i], str(self.pos[i]))

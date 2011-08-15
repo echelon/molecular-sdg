@@ -14,7 +14,7 @@ import sys
 import random
 import cairo
 from cairo import *
-from math import radians, sin, cos
+from math import radians, sin, cos, ceil 
 
 # Parsing, misc.
 from gui import Window
@@ -135,6 +135,33 @@ def redraw():
 		ctx.close_path()
 		ctx.stroke()
 
+	# TODO: DEBUG ONLY
+	# XXX: Not very well documented..
+	labels = {}
+	def add_label(pt, atomNum=0):
+		x = int(round(ceil(pt.x), -1))
+		y = int(round(ceil(pt.y), -1))
+		p = "%d,%d" % (x, y)
+		if p in labels:
+			if atomNum not in labels[p]['atoms']:
+				labels[p]['atoms'].append(atomNum)
+			return
+		labels[p] = {'atoms': [atomNum], 'pos': pt}
+
+	def draw_labels():
+		def label_position(pt, label=''):
+			ctx.move_to(pt.x, pt.y)
+			ctx.set_source_rgb(0, 0, 0)
+			ctx.show_text(label)
+
+		for lab in labels.values():
+			atoms = "%d" % lab['atoms'][0]
+			for atom in lab['atoms'][1:]:
+				atoms += ", %d" % atom
+			pt = lab['pos']
+			txt = "%s (%d, %d)" % (atoms, int(pt.x), int(pt.y))
+			label_position(lab['pos'], txt)
+
 	for group in ringGroups:
 		for ring in group:
 			# XXX XXX XXX XXX COLOR AND RAND OFFSET HELP DEBUG
@@ -143,10 +170,10 @@ def redraw():
 				'g': random.uniform(0.0, 0.6),
 				'b': random.uniform(0.0, 0.6),
 			}
-			#randX = random.randint(0, 10)
-			#randY = random.randint(0, 10)
 			randX = 0
 			randY = 0
+			#randX = random.randint(0, 10)
+			#randY = random.randint(0, 10)
 			for bond in ring.bonds:
 				bond = list(bond)
 				atomA = bond[0]
@@ -155,6 +182,13 @@ def redraw():
 				ptB = ring.pos[ring.index(atomB)]
 
 				draw_edge(ptA, ptB, color, randX, randY)
+
+			for i in range(len(ring)):
+				atom = ring[i]
+				#label_position(ring.pos[i], atom)
+				add_label(ring.pos[i], atom)
+
+	draw_labels()
 
 # TODO: Needs rename
 def parse_smiles_text(smiles, informalName=None):
@@ -203,7 +237,7 @@ def parse_smiles_text(smiles, informalName=None):
 		out = group.peelOrder[:]
 		out.reverse()
 		for ring in out:
-			debugText += "\n%d . %s" % (i, str(ring))
+			debugText += "\n<b><big>%d</big></b> . %s" % (i, str(ring))
 			i += 1
 
 	# Update global information.

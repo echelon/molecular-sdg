@@ -26,8 +26,10 @@ def construct_group(ringGroup):
 
 	# Assign points for core (using CW)
 	positions = regular_polygon(core, bondLen=50.0, direc='cw')
-	for i in range(len(positions)):
-		core.pos[i] = positions[i]
+
+	core.centerPos = positions['center']
+	for i in range(len(positions['ring'])):
+		core.pos[i] = positions['ring'][i]
 
 	# Work on remaining rings.
 	# TODO: Function, "attach_fused"
@@ -68,19 +70,114 @@ def construct_group(ringGroup):
 		# inside the ring being fused to -- overlapping rings will 
 		# result.
 		# FIXME: Verify this works when cw/ccw is implemented.
-		swapAB = True 
+		swapAB = False
 		fIdxA = fusionRing.index(a)
 		fIdxB = fusionRing.index(b)
-	
-		fDirec = False # Left
-		if (fIdxA + 1) % len(fusionRing) != fIdxB:
-			fDirec = True # Right
-			if fusionRing[fIdxA] == a:
-				swapAB = False 
-		else:
-			if fusionRing[fIdxB] == a:
-				swapAB = False
 
+		seq = fusionRing.sequence('cw')
+		sIdxA = seq.index(a)
+		sIdxB = seq.index(b)
+
+		direc = fusionRing.getDirection()
+
+		if direc == 'ccw':
+			swapAB = True
+
+
+		# XXX: WORKS FOR 75% 
+		#if (sIdxA + 1) % len(seq) == sIdxB:
+		#	swapAB = True
+			
+		"""
+		sDirec = False # Left
+		if (sIdxA + 1) % len(seq) != sIdxB:
+			sDirec = True # Right
+			if seq[sIdxA] == a:
+				swapAB = False
+			else:
+				swapAB = False
+		else:
+			if seq[sIdxB] == a:
+				swapAB = False
+			else:
+				swapAB = False
+		"""
+
+		idxA = ring.index(a)
+		idxB = ring.index(b)
+
+		"""
+		print a
+		print b
+		print ""
+		print idxA
+		print idxB
+		print idxA + 1
+		print ""
+		print ring
+		"""
+		# XXX/FIXME/TOTAL HACK
+		if (idxA - 1) == idxB:
+			#swapAB = True
+			pass
+
+		# Based on the Convex Hull problem:
+		# http://en.wikipedia.org/wiki/Graham_scan
+		def ccw(p1, p2, p3):
+			d1 = (p2.x - p1.x) * (p3.y - p1.y)
+			d2 = (p2.y - p1.y) * (p3.x - p1.x)
+			return d1 - d2
+
+		def direc(val):
+			if val < 0:
+				return 'ccw'
+			if val > 0:
+				return 'cw'
+			return 'colinear'
+
+		ptA = ring.pos[idxA]
+		ptB = ring.pos[idxB]
+		cen = fusionRing.centerPos
+
+		print ptA
+		print cen
+		print ptB
+
+		d1 = direc(ccw(ptB, cen, ptA))
+		d2 = fusionRing.getDirection()
+		print d1
+		print d2
+
+		if d1 == d2:
+			swapAB = True
+		if d2 == 'ccw':
+			swapAB = False
+
+		#if d1 == d2:
+		#	swapAB = True
+
+		p1 = fusionRing[idxA]
+
+		#return direc(ccw(self.pos[0], self.pos[1], self.pos[2]))
+
+
+
+
+		def index_direc(idxA, idxB, sz):
+			if (idxA + 1) % sz == idxB:
+				return 'cw'
+			return 'ccw'
+
+		
+
+
+		if ring.pos[idxA].y < ring.pos[idxB].y:
+			pass
+
+		#direc = ring.getDirection()
+		#print ("%s\n" % direc)*20
+		#print ""
+		#print ring
 
 		# Switch atoms depending on which side of the edge is being 
 		# drawn.
@@ -99,10 +196,10 @@ def construct_group(ringGroup):
 
 		aPtPos = None
 		bPtPos = None
-		for i in range(len(positions)):
-			if positions[i] == ring.pos[aPos]:
+		for i in range(len(positions['ring'])):
+			if positions['ring'][i] == ring.pos[aPos]:
 				aPtPos = i
-			if positions[i] == ring.pos[bPos]:
+			if positions['ring'][i] == ring.pos[bPos]:
 				bPtPos = i
 
 		try: 
@@ -112,7 +209,7 @@ def construct_group(ringGroup):
 				rDirec = True # Right
 
 			pDirec = False # Left
-			if (aPtPos + 1) % len(positions) != bPtPos:
+			if (aPtPos + 1) % len(positions['ring']) != bPtPos:
 				pDirec = False # Right
 
 		except:
@@ -135,19 +232,26 @@ def construct_group(ringGroup):
 			print ""
 
 			sys.exit()
-			
+
 		if rDirec == pDirec:
+			ring.centerPos = positions['center']
 			for i in range(len(ring)):
 				ri = (aPos + i) % len(ring)
 				pi = (aPtPos + i) % len(ring)
-				ring.pos[ri] = positions[pi]
+				ring.pos[ri] = positions['ring'][pi]
 
 		else:
+			ring.centerPos = positions['center']
 			for i in range(len(ring)):
 				ri = (aPos + i) % len(ring)
 				pi = (aPtPos - i) % len(ring) # XXX: Note sign
-				ring.pos[ri] = positions[pi]
-		
+				ring.pos[ri] = positions['ring'][pi]
+
+		"""
+		print ring # XXX TODO DEBUG ONLY
+		print "" 
+		"""
+
 		assigned.append(ring)
 
 	#sys.exit()
@@ -194,12 +298,12 @@ def regular_polygon(ring, atomA=None, atomB=None, bondLen=100.0, direc='cw'):
 		ptB = ring.pos[idxB]
 		"""
 		print "=======================================\n"
-		print "Atoms: %d, %d" % (atomA, atomB)
+		print "A & B Atoms: %d, %d" % (atomA, atomB)
 		print "Indices: %d, %d" % (idxA, idxB)
-		print "Position 1: %s" % str(ptA)
-		print "Position 2: %s" % str(ptB)
-		print ""
+		print "Position A: %s" % str(ptA)
+		print "Position B: %s" % str(ptB)
 		"""
+
 	else:
 		idxA = 0
 		# TODO: is this correct cw/ccw handling?
@@ -260,9 +364,14 @@ def regular_polygon(ring, atomA=None, atomB=None, bondLen=100.0, direc='cw'):
 	else:
 		theta = atan(opp/adj)
 
-	if not atomA or not atomB: # XXX: DEBUG
-		atomA = 0 # XXX DEBUG
-		atomB = 0 # XXX DEBUG
+	if atomA == None or atomB == None: # XXX: DEBUG
+		atomA = -1 # XXX DEBUG
+		atomB = -1 # XXX DEBUG
+
+	print "Preconfigured (old) atoms (and points):"
+	print "A atom: %d %s" % (atomA, ptA)
+	print "B atom: %d %s" % (atomB, ptB)
+	print ""
 
 	"""
 	print ""
@@ -298,5 +407,6 @@ def regular_polygon(ring, atomA=None, atomB=None, bondLen=100.0, direc='cw'):
 		i = (i + 1) % len(ring)
 		theta += phi # XXX: CW
 
-	return positions
+	return {'ring': positions, 'center': ptO}
+
 

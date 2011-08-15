@@ -44,7 +44,7 @@ EXAMPLES = {
 		'naphthalene': 'c1cccc2c1cccc2', # 2 linear
 		'anthracene': 'c3ccc2cc1ccccc1cc2c3', # 3 linear
 		'tetracene': 'c34cc2cc1ccccc1cc2cc3cccc4', # 4 linear
-		'acenaphthene': 'c2cc1cccc3c1c(c2)CC3', # 3 pyramidal
+		#'acenaphthene': 'c2cc1cccc3c1c(c2)CC3', # 3 pyramidal XXX: CRASH XXX
 		'chrysene': 'c1ccc2c(c1)ccc3c2ccc4c3cccc4', # 4 bent
 		'pyrene': 'c1cc2ccc3cccc4c3c2c(c1)cc4', # 4 cluster
 	},
