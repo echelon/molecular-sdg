@@ -1,4 +1,5 @@
-This is my first attempt at ***Structure Diagram Generation***.
+This is my first attempt at ***Structure Diagram Generation*** for
+organic molecules. 
 
 I'm a complete novice in the field of cheminformatics (this project
 also marks the start of my foray into computational biochemistry). I'm
@@ -34,7 +35,12 @@ Harder objectives
 * **First attempt at SDG** -- work in progress
 * **SA or GA to improve diagram quality**
 * **Chemical reaction representation**
-* **Automated chemical synthesis design**
+
+Much harder objectives
+----------------------
+* **Automated chemical synthesis design** with representation of
+  pathways and branches. Would be nice to get this done before 
+  Spring, 2012. 
 
 Reference Literature
 ====================

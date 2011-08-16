@@ -26,10 +26,11 @@ from algo.path import *
 # Data structures
 from molecule import Molecule
 from ring import partition_rings
+from chain import *
 
 # Perception
 from perception.rings import *
-from perception.chain import *
+from perception.chains import *
 
 # Analysis Phase
 from sdg.ring_analysis import *

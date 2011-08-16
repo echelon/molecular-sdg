@@ -6,16 +6,7 @@ Chains are identified and returned.
 # FIXME: This code is _really_ messy.
 
 from algo.path import ShortestPaths
-
-class Chain(object):
-	"""
-	Chain Structure
-	Contains metadata corresponding to a single chain. 
-	"""
-	def __init__(self):
-		self.path = [] # Atom numbers in the chain path. 
-		self.caps = [] # There are two end caps. 
-		self.zigzag = [] # Zigzag pattern along the chain from {L,R}. 
+from chain import Chain
 
 def identify_core_chain(mol, ringAtoms = []):
 	"""
