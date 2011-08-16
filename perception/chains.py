@@ -1,8 +1,20 @@
 """
 This module deals with Chain Perception.
-Chains are identified and returned. 
+Chain perception information aids in the assembly phase. But since 
+chains are not prefabricated units (PFUs), this information may be
+disregarded during assembly (eg. instances of congestion, etc).
+
+Chains are classified as containing "Core Chain Atoms", plus two
+capping substituents. Core Chain Atoms are:
+
+		* Acylic
+		* Cannot be sp-hybridized
+		* Have >= 2 neighbors
+		* Have >= 1 acyclic alpha atom (neighbor)
+		* Have >= 1 acylic beta atom (neighbor of neighbor)
 """
 
+# TODO: Better documentation
 # FIXME: This code is _really_ messy.
 
 from algo.path import ShortestPaths
@@ -10,7 +22,7 @@ from chain import Chain
 	
 def identify_chains(mol, rings=None):
 	"""
-	We need to take core chain and identify the largest contiguous runs.
+	Identify all chains in the molecule.
 	"""
 	
 	def build_connect_mat(mol):
@@ -70,8 +82,12 @@ def identify_chains(mol, rings=None):
 
 		return maxPath
 
-	# Ring atoms cannot be considered.
-	# TODO: Currently, only a lists or tuples is supported as ring input.
+	# TODO TEMPORARY DEBUGGING
+	print "Debugging Chain Perception"
+	print "=========================="
+	import sys
+
+	# Ring atoms cannot be considered in chain perception. 
 	ringAtoms = []
 	if rings:
 		ratoms = []
@@ -79,8 +95,11 @@ def identify_chains(mol, rings=None):
 			ratoms += r
 		ringAtoms = list(set(ratoms))
 
+	print "Ring atoms: %s" % ringAtoms	
+	#sys.exit()
+
 	# Find, identify the "core chain" atoms
-	coreFlags = _identify_core_chain(mol, ringAtoms)
+	coreFlags = _identify_core_chain_atoms(mol, ringAtoms)
 
 	# Copy the molecule's connectivity matrix, then specify that all
 	# non-"core chain" atoms are to be removed in the first pass.
@@ -93,7 +112,7 @@ def identify_chains(mol, rings=None):
 		# Disconnect the specified atoms from the connection matrix
 		# This ensures no two chains consist of the same atoms. 
 		disconnect_vertices(connectMat, removeAtoms)
-	
+
 		# (Re)calculate the shortest paths, and extract the longest chain
 		s = ShortestPaths(connectMat)
 		verts = find_maxweight_verts(s)
@@ -105,45 +124,46 @@ def identify_chains(mol, rings=None):
 
 		# Save the chain, then set up the removal of all atoms that
 		# were in it. 
-		chains.append(chain)
+		chains.append(Chain(chain))
 		removeAtoms = chain[:]
-		
+
+	print "Chains: %s" % chains
+	#sys.exit() # TODO TEMP DEBUG
 
 	return chains
 
-def _identify_core_chain(mol, ringAtoms = []):
+def _identify_core_chain_atoms(mol, ringAtoms = []):
 	"""
-	Chain perception information aids in the assembly phase.
-	But since chains are not prefabricated units (PFUs), this 
-	information may be disregarded during assembly (eg. instances of
-	congestion, etc).
+	Identify which atoms in our molecule correspond to the definition
+	of core chain atoms. Core chain atoms are:
+		* Acylic
+		* Cannot be sp-hybridized
+		* Have >= 2 neighbors
+		* Have >= 1 acyclic alpha atom (neighbor)
+		* Have >= 1 acylic beta atom (neighbor of neighbor)
 
-		Core Chain Atoms:
-			* Acylic
-			* Cannot be sp-hybridized
-			* Has >= 2 neighbors
-			* Has >= 1 acyclic neighbor
-			* Has >= 1 acylic beta atom
-			* (Not partially selected ??)
+	Returns: Flags for each atom in the molecule, marking them per the
+	core chain definition. These flags are later used for chain 
+	perception.
 	"""
-	# FIXME: I will have to develop my own heuristics here. Several
-	# needs are listed below. 
+	# FIXME: I will have to develop my own heuristics here. 
+	# Several needs are listed below. 
 
 	# Core chain flags. 
 	coreChainFlags = [False for i in range(mol.size)]
-	types = ['EqAS' for i in range(mol.size)]
 
-	"""Determine which atoms belong to a core chain."""
+	"""Step1: Determine which atoms fit the core chain definition."""
 
 	for atomNum in range(mol.size):
 		# TODO: What does Helson mean, "not partially selected"? p340
+
 		# Atom cannot be a ring atom. 
 		if atomNum in ringAtoms:
 			continue
 
 		# Atom cannot be sp-hybridized
 		# FIXME: hybridization error handling. 
-		if mol.hybridizations[atomNum] in ['sp', 'error']:
+		if mol.hybridizations[atomNum] in ('sp', 'error'):
 			continue
 	
 		neighbors = mol.alphaAtoms[atomNum]
@@ -174,15 +194,13 @@ def _identify_core_chain(mol, ringAtoms = []):
 
 		# Assign as a core chain.
 		coreChainFlags[atomNum] = True
-		types[atomNum] = 'FxAS'
 
-
-	"""Step2: reeexamine every FxAS atom to determine if still core."""
+	"""Step2: reexamine atoms to determine if still core."""
 
 	coreChainCopy = coreChainFlags[:]
 
 	for i in range(mol.size):
-		if types[i] == 'EqAS':
+		if not coreChainFlags[i]:
 			continue
 
 		neighbors = mol.alphaAtoms[i]
@@ -197,12 +215,11 @@ def _identify_core_chain(mol, ringAtoms = []):
 			if coreChainCopy[n]:
 				alphaNonCore -= 1
 				numCore += 1
-			elif mol.types[n].upper() not in ['C', 'H']:
+			elif mol.types[n].upper() not in ('C', 'H'):
 				numHetero += 1
 
-		if numHetero > 0 and numHetero >= (alphaNonCore): #- numCore):
+		if numHetero > 0 and numHetero >= (alphaNonCore):
 			coreChainFlags[i] = False
-			types[i] = 'EqAS'
 			continue
 
 		# TODO/FIXME: Need a congestedness heuristic for sitations
@@ -211,7 +228,6 @@ def _identify_core_chain(mol, ringAtoms = []):
 		# Conjestedness heurisic: num beta atoms > 6
 		if len(mol.betaAtoms[i]) > 6:
 			coreChainFlags[i] = False
-			types[i] = 'EqAS'
 			continue
 
 		# Degree of substituent heteroatoms.
@@ -224,7 +240,6 @@ def _identify_core_chain(mol, ringAtoms = []):
 						cnt += 1
 		if cnt >= 3:
 			coreChainFlags[i] = False
-			types[i] = 'EqAS'
 			continue
 
 		# Reclassify if has >= 3 substituents with pi systems (double,
@@ -235,11 +250,7 @@ def _identify_core_chain(mol, ringAtoms = []):
 		#		cnt += 1
 		if cnt >= 3:
 			coreChainFlags[i] = False
-			types[i] = 'EqAS'
 			continue
 
-	# XXX/FIXME: Assumption: coreChainFlags and types are identical. 
-	# I'll return the former for now. 
-	#print types
 	return coreChainFlags
 
