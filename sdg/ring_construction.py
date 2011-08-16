@@ -1,6 +1,6 @@
 """
 Ring Construction picks up where Ring Analysis left off.
-It is the process of laying out the ring coordinates.
+It is the process of determining the ring coordinates.
 """
 
 from math import *
@@ -8,8 +8,10 @@ import sys
 
 from ring import RING_TYPES, Point
 
-# TODO: Bridged ring positioning
-# TODO: Spiro ring positioning
+# TODO: Bridged attachment
+# TODO: Spiro attachment
+# TODO: Open Polygon positioning
+# TODO: Irregular core positioning
 # FIXME: cw/ccw direction handling (how does it work?)
 
 def construct_group(ringGroup):
@@ -17,28 +19,11 @@ def construct_group(ringGroup):
 	Construct the coordinates, CFS, etc. for a ring group.
 	Follows from [Helson] p~335
 	"""
-	remRings = list(ringGroup.peelOrder[:])
+	# Already assigned rings. Accessed by subprocesses. 
+	assigned = []
 
-	# Take care of core ring
-	core = remRings.pop()
-	if core.type != RING_TYPES.CORE:
-		raise Exception, "Last Ring from Ring Peeling is not Core!"
-
-	# Assign points for core (using CW)
-	positions = regular_polygon(core, bondLen=50.0, direc='cw')
-
-	core.centerPos = positions['center']
-	for i in range(len(positions['ring'])):
-		core.pos[i] = positions['ring'][i]
-
-	# Work on remaining rings.
-	# TODO: Function, "attach_fused"
-
-	assigned = [core]
-
-	while remRings:
-		ring = remRings.pop()
-
+	def attach_fused(ring):
+		"""Attached fused rings accordingly."""
 		# Get the fusion atoms
 		fusionAtoms = None
 		fusionRing = None
@@ -144,6 +129,34 @@ def construct_group(ringGroup):
 				ring.pos[ri] = positions['ring'][pi]
 
 		assigned.append(ring)
+
+	# Copy rings according to peel order. 
+	# Take care of assigning positions to core ring.
+	remRings = list(ringGroup.peelOrder[:])
+
+	core = remRings.pop()
+	if core.type != RING_TYPES.CORE:
+		raise Exception, "Last Ring from Ring Peeling is not Core!"
+
+	positions = regular_polygon(core, bondLen=50.0, direc='cw')
+
+	core.centerPos = positions['center']
+	for i in range(len(positions['ring'])):
+		core.pos[i] = positions['ring'][i]
+
+	# Work on remaining rings.
+	assigned = [core]
+
+	# TODO: Handle spiro.
+	# TODO: Handle bridged.
+	while remRings:
+		ring = remRings.pop()
+
+		if ring.type == RING_TYPES.FUSED:
+			attach_fused(ring)
+			continue
+
+		print "Unable to handle ring type."
 
 	return
 
