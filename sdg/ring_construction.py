@@ -69,57 +69,9 @@ def construct_group(ringGroup):
 		# fused to, otherwise the center point calculated will lie
 		# inside the ring being fused to -- overlapping rings will 
 		# result.
-		# FIXME: Verify this works when cw/ccw is implemented.
+		# FIXME/TODO: Verify if it supports 'ccw' drawing.
+
 		swapAB = False
-		fIdxA = fusionRing.index(a)
-		fIdxB = fusionRing.index(b)
-
-		seq = fusionRing.sequence('cw')
-		sIdxA = seq.index(a)
-		sIdxB = seq.index(b)
-
-		direc = fusionRing.getDirection()
-
-		if direc == 'ccw':
-			swapAB = True
-
-
-		# XXX: WORKS FOR 75% 
-		#if (sIdxA + 1) % len(seq) == sIdxB:
-		#	swapAB = True
-			
-		"""
-		sDirec = False # Left
-		if (sIdxA + 1) % len(seq) != sIdxB:
-			sDirec = True # Right
-			if seq[sIdxA] == a:
-				swapAB = False
-			else:
-				swapAB = False
-		else:
-			if seq[sIdxB] == a:
-				swapAB = False
-			else:
-				swapAB = False
-		"""
-
-		idxA = ring.index(a)
-		idxB = ring.index(b)
-
-		"""
-		print a
-		print b
-		print ""
-		print idxA
-		print idxB
-		print idxA + 1
-		print ""
-		print ring
-		"""
-		# XXX/FIXME/TOTAL HACK
-		if (idxA - 1) == idxB:
-			#swapAB = True
-			pass
 
 		# Based on the Convex Hull problem:
 		# http://en.wikipedia.org/wiki/Graham_scan
@@ -135,56 +87,23 @@ def construct_group(ringGroup):
 				return 'cw'
 			return 'colinear'
 
+		idxA = ring.index(a)
+		idxB = ring.index(b)
+
 		ptA = ring.pos[idxA]
 		ptB = ring.pos[idxB]
 		cen = fusionRing.centerPos
 
-		print ptA
-		print cen
-		print ptB
-
 		d1 = direc(ccw(ptB, cen, ptA))
 		d2 = fusionRing.getDirection()
-		print d1
-		print d2
 
 		if d1 == d2:
 			swapAB = True
 		if d2 == 'ccw':
 			swapAB = False
 
-		#if d1 == d2:
-		#	swapAB = True
-
-		p1 = fusionRing[idxA]
-
-		#return direc(ccw(self.pos[0], self.pos[1], self.pos[2]))
-
-
-
-
-		def index_direc(idxA, idxB, sz):
-			if (idxA + 1) % sz == idxB:
-				return 'cw'
-			return 'ccw'
-
-		
-
-
-		if ring.pos[idxA].y < ring.pos[idxB].y:
-			pass
-
-		#direc = ring.getDirection()
-		#print ("%s\n" % direc)*20
-		#print ""
-		#print ring
-
-		# Switch atoms depending on which side of the edge is being 
-		# drawn.
-		# FIXME/TODO: Verify if it supports 'ccw' drawing.
 		if swapAB:
 			ring.swapped = True # XXX/TEMPORARY: BOOL IS DEBUG ONLY
-			print "\t>> SWITCH DIRECTION"
 			a, b = b, a
 
 		positions = regular_polygon(ring, atomA=a, atomB=b, 
@@ -202,36 +121,13 @@ def construct_group(ringGroup):
 			if positions['ring'][i] == ring.pos[bPos]:
 				bPtPos = i
 
-		try: 
+		rDirec = False # Left
+		if (aPos + 1) % len(ring) != bPos:
+			rDirec = True # Right
 
-			rDirec = False # Left
-			if (aPos + 1) % len(ring) != bPos:
-				rDirec = True # Right
-
-			pDirec = False # Left
-			if (aPtPos + 1) % len(positions['ring']) != bPtPos:
-				pDirec = False # Right
-
-		except:
-			print "========================================"
-			print "======== Mapping Positions to Ring ====="
-			print "Fusion Atoms: %d and %d" % (a, b)
-			print "Indices: %d and %d" % (aPos, bPos)
-			print "Map Points: "
-			print "\t", 
-			print aPtPos
-			print "\t", 
-			print bPtPos
-			print ""
-			print "Positions Generated: "
-			print positions
-			print ""
-			print "Supposed to have included:"
-			print "Position A: %s" % ring.pos[aPos]
-			print "Position B: %s" % ring.pos[bPos]
-			print ""
-
-			sys.exit()
+		pDirec = False # Left
+		if (aPtPos + 1) % len(positions['ring']) != bPtPos:
+			pDirec = False # Right
 
 		if rDirec == pDirec:
 			ring.centerPos = positions['center']
@@ -247,14 +143,7 @@ def construct_group(ringGroup):
 				pi = (aPtPos - i) % len(ring) # XXX: Note sign
 				ring.pos[ri] = positions['ring'][pi]
 
-		"""
-		print ring # XXX TODO DEBUG ONLY
-		print "" 
-		"""
-
 		assigned.append(ring)
-
-	#sys.exit()
 
 	return
 
@@ -265,7 +154,8 @@ def regular_polygon(ring, atomA=None, atomB=None, bondLen=100.0, direc='cw'):
 
 	Inputs:
 		ring - ring object
-		atomA/atomB - desired first and second atom
+		atomA/atomB - desired first and second atom (for the core ring:
+					  both are optional)
 		bondLen - desired length of the bonds.
 		direc - direction of the construction.
 
@@ -275,7 +165,8 @@ def regular_polygon(ring, atomA=None, atomB=None, bondLen=100.0, direc='cw'):
 		3. Find vertex points by adding or subtracting phi 
 		   once per vertex. (Easy).
 	
-	Returns: A list of Point object coordinates for each vertex.
+	Returns: A dictionary containing a list of Point object coordinates
+	for each vertex and the center point.
 	"""
 	if direc not in ('cw', 'ccw'):
 		raise Exception, 'Direction supplied `%s` is invalid.' % direc
@@ -296,13 +187,6 @@ def regular_polygon(ring, atomA=None, atomB=None, bondLen=100.0, direc='cw'):
 		idxB = ring.index(atomB)
 		ptA = ring.pos[idxA]
 		ptB = ring.pos[idxB]
-		"""
-		print "=======================================\n"
-		print "A & B Atoms: %d, %d" % (atomA, atomB)
-		print "Indices: %d, %d" % (idxA, idxB)
-		print "Position A: %s" % str(ptA)
-		print "Position B: %s" % str(ptB)
-		"""
 
 	else:
 		idxA = 0
@@ -317,7 +201,7 @@ def regular_polygon(ring, atomA=None, atomB=None, bondLen=100.0, direc='cw'):
 			ptB = Point(ptA.x + bondLen, ptA.y)
 
 	# Discern bond length.
-	# FIXME: Inconsistent to recalculate.
+	# FIXME: Inconsistent to recalculate bond length.
 	x = abs(ptA.x - ptB.x)
 	y = abs(ptA.y - ptB.y)
 	L = sqrt(x**2 + y**2) # Bond length
@@ -356,38 +240,12 @@ def regular_polygon(ring, atomA=None, atomB=None, bondLen=100.0, direc='cw'):
 	theta = 0
 	if adj == 0.0:
 		# TODO: Verify
-		print "Must use predefined angle." # XXX DEBUG
 		if opp >= 0:
 			theta = pi * 1/2
 		else:
 			theta = pi * 3/2
 	else:
 		theta = atan(opp/adj)
-
-	if atomA == None or atomB == None: # XXX: DEBUG
-		atomA = -1 # XXX DEBUG
-		atomB = -1 # XXX DEBUG
-
-	print "Preconfigured (old) atoms (and points):"
-	print "A atom: %d %s" % (atomA, ptA)
-	print "B atom: %d %s" % (atomB, ptB)
-	print ""
-
-	"""
-	print ""
-	print "-----------"
-	#if ring:
-	#	print ring
-	print "Preconfigured (old) atoms (and points):"
-	print "A atom: %d idx: %d %s" % (atomA, idxA, ptA)
-	print "B atom: %d idx: %d %s" % (atomB, idxB, ptB)
-	print ""
-	#print "Derived Midpoint C: %s" % str(ptC) # CORRECT
-	print "Derived Center Point O: %s" % str(ptO) # XXX INCORRECT
-	print "R: %f" % r
-	#print "-----------"
-	print ""
-	"""
 
 	# Calculate the atom positions in the ring.
 	i = idxA
@@ -397,16 +255,8 @@ def regular_polygon(ring, atomA=None, atomB=None, bondLen=100.0, direc='cw'):
 		py = ptO.y + sin(theta) * r
 		positions.append(Point(px, py))
 
-		"""
-		print "Angle: %f" % degrees(theta)
-		print "Point: %s" % Point(px, py)
-		print "Index: %d Atom: %d" % (i, ring[i])
-		print ""
-		"""
-
 		i = (i + 1) % len(ring)
 		theta += phi # XXX: CW
 
 	return {'ring': positions, 'center': ptO}
-
 
