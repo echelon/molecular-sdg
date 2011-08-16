@@ -14,6 +14,7 @@ import sys
 import random
 import cairo
 from cairo import *
+from glib import markup_escape_text
 from math import radians, sin, cos, ceil 
 
 # Parsing, misc.
@@ -209,26 +210,25 @@ def parse_smiles_text(smiles, informalName=None):
 
 	debugText = ""
 
-	#mol.print_matrix()
-
 	# Perception algorithms. 
 	rings = identify_rings(mol)
 	chains = identify_chains(mol, rings)
+	
+	print chains
 
 	# Ring analysis
 	ringGroups = partition_rings(rings)
 
-	#print ringGroups
-
 	ring_analysis(ringGroups, mol)
 
-	#for rg in ringGroups:
-	#	print rg.peelOrder
-
+	# Pango markup for debug window
 	debugText += "<b>Informal Name</b>:\n%s\n\n" % informalName
 	debugText += "<b>Ring Groups</b>: %d\n" % len(ringGroups)
-	debugText += "<b>Rings</b>: %d\n\n" % len(rings)
-	debugText += "<b><u>Constructed Ring Groups</u></b>\n"
+	debugText += "<b>Rings</b>: %d" % len(rings)
+	debugText += "\n<b>Chains</b>: %d" % len(chains)
+	debugText += "\n\n<big><b>Molecule Report</b></big>:\n<tt>%s</tt>" % \
+			markup_escape_text(str(mol))
+	debugText += "\n\n<b><u>Constructed Ring Groups</u></b>\n"
 
 	for group in ringGroups:
 		construct_group(group)

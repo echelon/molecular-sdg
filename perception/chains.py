@@ -7,8 +7,111 @@ Chains are identified and returned.
 
 from algo.path import ShortestPaths
 from chain import Chain
+	
+def identify_chains(mol, rings=None):
+	"""
+	We need to take core chain and identify the largest contiguous runs.
+	"""
+	
+	def build_connect_mat(mol):
+		"""
+		Build a connection matrix we can use in Floyd's algorithm.
+		'Not connected' is represented by infinity.
+		"""
+		inf = float('Infinity')
+		newMat = [[inf for x in range(mol.size)] for y in range(mol.size)]
+		for i in range(mol.size):
+			for j in range(mol.size):
+				val = mol.connectMat[i][j]
+				val = inf if not val else 1
+				newMat[i][j] = val
+		return newMat
 
-def identify_core_chain(mol, ringAtoms = []):
+	def get_core_vertices(coreFlags):
+		"""Get a list of core vertices from core chain flags."""
+		core = []
+		for i in range(len(coreFlags)):
+			if coreFlags[i]:
+				core.append(i)
+		return core
+
+	def get_noncore_vertices(coreFlags):
+		"""Get a list of non-core vertices from core chain flags."""
+		core = []
+		for i in range(len(coreFlags)):
+			if not coreFlags[i]:
+				core.append(i)
+		return core
+
+	def disconnect_vertices(matrix, removeVerts = []):
+		"""Disconnect the vertices specified from the adj matrix."""
+		inf = float('Infinity')
+		length = len(matrix)
+		for vert in removeVerts:
+			for i in range(length):
+				matrix[i][vert] = inf
+				matrix[vert][i] = inf
+
+	def find_maxweight_verts(shortestPaths):
+		"""Find the maximum weight in a ShortestPaths object."""
+		inf = float('Infinity')
+		DNE = [inf, -inf, None]
+		length = shortestPaths.size()
+		maxWeight = -1
+		maxPath = (-1, -1)
+		for i in range(length):
+			for j in range(length):
+				weight = shortestPaths.getWeight(i, j)
+				if weight in DNE:
+					continue
+				if weight > maxWeight:
+					maxWeight = weight
+					maxPath = (i, j)
+
+		return maxPath
+
+	# Ring atoms cannot be considered.
+	# TODO: Currently, only a lists or tuples is supported as ring input.
+	ringAtoms = []
+	if rings:
+		ratoms = []
+		for r in rings:
+			ratoms += r
+		ringAtoms = list(set(ratoms))
+
+	# Find, identify the "core chain" atoms
+	coreFlags = _identify_core_chain(mol, ringAtoms)
+
+	# Copy the molecule's connectivity matrix, then specify that all
+	# non-"core chain" atoms are to be removed in the first pass.
+	connectMat = build_connect_mat(mol)
+	removeAtoms = get_noncore_vertices(coreFlags)
+
+	# Get all of the chains, starting with the longest. 
+	chains = []
+	while True:
+		# Disconnect the specified atoms from the connection matrix
+		# This ensures no two chains consist of the same atoms. 
+		disconnect_vertices(connectMat, removeAtoms)
+	
+		# (Re)calculate the shortest paths, and extract the longest chain
+		s = ShortestPaths(connectMat)
+		verts = find_maxweight_verts(s)
+		chain = s.findPath(verts[0], verts[1], include=True)
+
+		# FIXME: I assume this is the only condition that breaks the loop...
+		if type(chain) != list:
+			break
+
+		# Save the chain, then set up the removal of all atoms that
+		# were in it. 
+		chains.append(chain)
+		removeAtoms = chain[:]
+		
+
+	return chains
+
+def _identify_core_chain(mol, ringAtoms = []):
 	"""
 	Chain perception information aids in the assembly phase.
 	But since chains are not prefabricated units (PFUs), this 
@@ -139,107 +242,4 @@ def identify_core_chain(mol, ringAtoms = []):
 	# I'll return the former for now. 
 	#print types
 	return coreChainFlags
-	
-def identify_chains(mol, rings=None):
-	"""
-	We need to take core chain and identify the largest contiguous runs.
-	"""
-	
-	def build_connect_mat(mol):
-		"""
-		Build a connection matrix we can use in Floyd's algorithm.
-		'Not connected' is represented by infinity.
-		"""
-		inf = float('Infinity')
-		newMat = [[inf for x in range(mol.size)] for y in range(mol.size)]
-		for i in range(mol.size):
-			for j in range(mol.size):
-				val = mol.connectMat[i][j]
-				val = inf if not val else 1
-				newMat[i][j] = val
-		return newMat
-
-	def get_core_vertices(coreFlags):
-		"""Get a list of core vertices from core chain flags."""
-		core = []
-		for i in range(len(coreFlags)):
-			if coreFlags[i]:
-				core.append(i)
-		return core
-
-	def get_noncore_vertices(coreFlags):
-		"""Get a list of non-core vertices from core chain flags."""
-		core = []
-		for i in range(len(coreFlags)):
-			if not coreFlags[i]:
-				core.append(i)
-		return core
-
-	def disconnect_vertices(matrix, removeVerts = []):
-		"""Disconnect the vertices specified from the adj matrix."""
-		inf = float('Infinity')
-		length = len(matrix)
-		for vert in removeVerts:
-			for i in range(length):
-				matrix[i][vert] = inf
-				matrix[vert][i] = inf
-
-	def find_maxweight_verts(shortestPaths):
-		"""Find the maximum weight in a ShortestPaths object."""
-		inf = float('Infinity')
-		DNE = [inf, -inf, None]
-		length = shortestPaths.size()
-		maxWeight = -1
-		maxPath = (-1, -1)
-		for i in range(length):
-			for j in range(length):
-				weight = shortestPaths.getWeight(i, j)
-				if weight in DNE:
-					continue
-				if weight > maxWeight:
-					maxWeight = weight
-					maxPath = (i, j)
-
-		return maxPath
-
-	# Ring atoms cannot be considered.
-	# TODO: Currently, only a lists or tuples is supported as ring input.
-	ringAtoms = []
-	if rings:
-		ratoms = []
-		for r in rings:
-			ratoms += r
-		ringAtoms = list(set(ratoms))
-
-	# Find, identify the "core chain" atoms
-	coreFlags = identify_core_chain(mol, ringAtoms)
-
-	# Copy the molecule's connectivity matrix, then specify that all
-	# non-"core chain" atoms are to be removed in the first pass.
-	connectMat = build_connect_mat(mol)
-	removeAtoms = get_noncore_vertices(coreFlags)
-
-	# Get all of the chains, starting with the longest. 
-	chains = []
-	while True:
-		# Disconnect the specified atoms from the connection matrix
-		# This ensures no two chains consist of the same atoms. 
-		disconnect_vertices(connectMat, removeAtoms)
-	
-		# (Re)calculate the shortest paths, and extract the longest chain
-		s = ShortestPaths(connectMat)
-		verts = find_maxweight_verts(s)
-		chain = s.findPath(verts[0], verts[1], include=True)
-
-		# FIXME: I assume this is the only condition that breaks the loop...
-		if type(chain) != list:
-			break
-
-		# Save the chain, then set up the removal of all atoms that
-		# were in it. 
-		chains.append(chain)
-		removeAtoms = chain[:]
-		
-
-	return chains
 

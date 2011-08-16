@@ -247,21 +247,19 @@ class Molecule(object):
 		# This is just a quick compare. (Harmful?)
 		return True
 
-	def print_matrix(self):
-		"""
-		Print the molecular data for debugging.
-		"""
-		print "====== Begin Report ======\n"
-		print "Name: %s" % str(self.informalName)
-		print "Smiles: %s" % str(self.smiles)
-		print ""
+	def __str__(self):
+		"""String representation of the molecule for debugging."""
+		txt = ""
+		txt += "====== Molecule Report ======\n\n"
+		txt += "Name: %s\n" % str(self.informalName)
+		txt += "Smiles: %s\n" % str(self.smiles)
+		txt += "\n"
 
-		print "Types: %s" % str(self.types)
-		print "Charges: %s" % str(self.charges)
-		print "Isotopes: %s" % str(self.isotopes)
-		print "Hybridizations: %s" % str(self.hybridizations)
-		print "Degrees: %s" % str(self.degrees)
-		print ""
+		txt += "\nTypes: %s" % str(self.types)
+		txt += "\nCharges: %s" % str(self.charges)
+		txt += "\nIsotopes: %s" % str(self.isotopes)
+		txt += "\nHybridizations: %s" % str(self.hybridizations)
+		txt += "\nDegrees: %s" % str(self.degrees)
 
 		# XXX: Won't print >= 100 atoms nicely. Not that it would be
 		# wise to print out such systems in the terminal...
@@ -279,8 +277,9 @@ class Molecule(object):
 			else:
 				line2 += " "
 
-		print line1
-		print line2
+		txt += "\n%s" % line1
+		txt += "\n%s" % line2
+		txt += "\n"
 
 		def row_header(i):
 			# FIXME: Can't print systems with > 99 atoms or print 
@@ -298,10 +297,10 @@ class Molecule(object):
 			for j in range(self.size):
 				ln += str(int(self.bondOrderMat[i][j])) + " " \
 						if self.bondOrderMat[i][j] else ". "
-			print ln
+			txt += "%s\n" % ln
 
 		# Lots of information 
-		print "\nLabels; Hybridization; Degree; Alpha and Beta Atoms:"
+		txt += "\nLabels; Hybridization; Degree; Alpha and Beta Atoms:\n"
 		for i in range(self.size):
 			ln = row_header(i)
 			hybrid = str(self.hybridizations[i])
@@ -318,11 +317,12 @@ class Molecule(object):
 			else:
 				ln += "\t"
 			ln += str(self.betaAtoms[i])
-			print ln
+			txt += "%s\n" % ln
 
-		print ""
-		print "Informal Name: %s" % str(self.informalName)
-		print "Smiles: %s" % str(self.smiles)
-		print "\n====== End Report ======"
+		txt += "\nInformal Name: %s" % str(self.informalName)
+		txt += "\nSmiles: %s" % str(self.smiles)
+		txt += "\n\n====== End Molecule Report======"
+
+		return txt
 
 
