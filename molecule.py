@@ -102,6 +102,8 @@ class Molecule(object):
 						continue
 					if mat[i][j]:
 						table[i].append(j)
+			for i in range(sz):
+				table[i] = frozenset(table[i])
 			return table
 
 		@make_immutable
@@ -116,6 +118,8 @@ class Molecule(object):
 						if k == i:
 							continue
 						table[i].append(k)
+			for i in range(sz):
+				table[i] = frozenset(table[i])
 			return table
 
 		def compute_hybridizations(bondOrderMat, neighborTable):

@@ -14,8 +14,8 @@ capping substituents. Core Chain Atoms are:
 		* Have >= 1 acylic beta atom (neighbor of neighbor)
 """
 
-# TODO: Better documentation
-# FIXME: This code is _really_ messy.
+# FIXME: Better documentation
+# FIXME: Cleanup messy code
 
 from algo.path import ShortestPaths
 from chain import Chain
@@ -26,11 +26,8 @@ def identify_chains(mol, rings=None):
 	"""
 	
 	def build_connect_mat(mol):
-		"""
-		Build a connection matrix we can use in Floyd's algorithm.
-		'Not connected' is represented by infinity.
-		"""
-		inf = float('Infinity')
+		"""Build a connection matrix we can use in Floyd's algorithm"""
+		inf = float('Infinity') # 'Not connected' is repr by infinity
 		newMat = [[inf for x in range(mol.size)] for y in range(mol.size)]
 		for i in range(mol.size):
 			for j in range(mol.size):
@@ -40,7 +37,7 @@ def identify_chains(mol, rings=None):
 		return newMat
 
 	def get_core_vertices(coreFlags):
-		"""Get a list of core vertices from core chain flags."""
+		"""Get a list of core vertices from core chain flags"""
 		core = []
 		for i in range(len(coreFlags)):
 			if coreFlags[i]:
@@ -49,14 +46,14 @@ def identify_chains(mol, rings=None):
 
 	def get_noncore_vertices(coreFlags):
 		"""Get a list of non-core vertices from core chain flags."""
-		core = []
+		noncore = []
 		for i in range(len(coreFlags)):
 			if not coreFlags[i]:
-				core.append(i)
-		return core
+				noncore.append(i)
+		return noncore
 
 	def disconnect_vertices(matrix, removeVerts = []):
-		"""Disconnect the vertices specified from the adj matrix."""
+		"""Disconnect the vertices specified from the adj matrix"""
 		inf = float('Infinity')
 		length = len(matrix)
 		for vert in removeVerts:
@@ -65,7 +62,10 @@ def identify_chains(mol, rings=None):
 				matrix[vert][i] = inf
 
 	def find_maxweight_verts(shortestPaths):
-		"""Find the maximum weight in a ShortestPaths object."""
+		"""
+		Find the maximum weight in a ShortestPaths object. We want to 
+		find the longest chains, not the shortest ones. 
+		"""
 		inf = float('Infinity')
 		DNE = [inf, -inf, None]
 		length = shortestPaths.size()
@@ -82,11 +82,6 @@ def identify_chains(mol, rings=None):
 
 		return maxPath
 
-	# TODO TEMPORARY DEBUGGING
-	print "Debugging Chain Perception"
-	print "=========================="
-	import sys
-
 	# Ring atoms cannot be considered in chain perception. 
 	ringAtoms = []
 	if rings:
@@ -94,9 +89,6 @@ def identify_chains(mol, rings=None):
 		for r in rings:
 			ratoms += r
 		ringAtoms = list(set(ratoms))
-
-	print "Ring atoms: %s" % ringAtoms	
-	#sys.exit()
 
 	# Find, identify the "core chain" atoms
 	coreFlags = _identify_core_chain_atoms(mol, ringAtoms)
@@ -106,7 +98,11 @@ def identify_chains(mol, rings=None):
 	connectMat = build_connect_mat(mol)
 	removeAtoms = get_noncore_vertices(coreFlags)
 
+	# Don't reuse capping substituents.
+	unusableCaps = []
+
 	# Get all of the chains, starting with the longest. 
+	# Assign arbitrary capping substituents. 
 	chains = []
 	while True:
 		# Disconnect the specified atoms from the connection matrix
@@ -122,13 +118,33 @@ def identify_chains(mol, rings=None):
 		if type(chain) != list:
 			break
 
-		# Save the chain, then set up the removal of all atoms that
-		# were in it. 
-		chains.append(Chain(chain))
-		removeAtoms = chain[:]
+		def reserve_end_cap(chain, pos):
+			"""
+			Choose an end cap atom arbitrarily; the cap cannot be part
+			of the chain, nor can it be previously selected.
+			"""
+			atom = chain[pos]
+			diff = frozenset(mol.alphaAtoms[atom]) - frozenset(chain)
+			diff -= frozenset(unusableCaps)
+			if not diff:
+				cap = chain.pop(pos)
+			else:
+				cap = list(diff)[0]
+			unusableCaps.append(cap)
+			return cap
 
-	print "Chains: %s" % chains
-	#sys.exit() # TODO TEMP DEBUG
+		end1 = reserve_end_cap(chain, 0)
+		end2 = reserve_end_cap(chain, -1)
+
+		# Save the chain, end caps, then set up the removal of all
+		# atoms that were in it. 
+		removeAtoms = chain[:]
+		removeAtoms.extend([end1, end2])
+
+		chain = Chain(chain)
+		chain.caps = (end1, end2) # FIXME: Not a good interface!
+
+		chains.append(chain)
 
 	return chains
 

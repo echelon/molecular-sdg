@@ -1,3 +1,6 @@
+"""
+Chain-related data structures and functions.
+"""
 
 class Chain(tuple):
 	"""
@@ -28,7 +31,7 @@ class Chain(tuple):
 		self.invertOk = False # Whether the chain may be inverted.  
 
 	def __repr__(self):
-		return "chain%s" % str(self[:])
+		return "chain[%d, %s, %d]" % (self.caps[0], str(self[:]), self.caps[1])
 
 	def __str__(self):
 		return repr(self)

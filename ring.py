@@ -1,13 +1,13 @@
 """
 Ring-related data structures and essential functions.
 
-	Classes:
-		Ring
-		RingGroup
-		RingSystem (TODO: Not necessarily needed...)
+* Classes:
+	Ring
+	RingGroup
+	RingSystem (TODO: Not necessarily needed...)
 
-	Functions:
-		partition_rings()
+* Functions:
+	partition_rings()
 """
 
 from util.enum import enum
