@@ -131,6 +131,7 @@ def identify_chains(mol, rings=None):
 			else:
 				cap = list(diff)[0]
 			unusableCaps.append(cap)
+			unusableCaps.extend(list(chain))
 			return cap
 
 		end1 = reserve_end_cap(chain, 0)
