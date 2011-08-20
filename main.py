@@ -34,8 +34,7 @@ from perception.rings import *
 from perception.chains import *
 
 # Analysis Phase
-from sdg.ring_analysis import *
-from sdg.ring_construction import *
+from analysis.rings import *
 
 class Globals(object):
 	"""Used as a Global Dictionary."""
@@ -218,8 +217,8 @@ def parse_smiles_text(smiles, informalName=None):
 
 	# Ring analysis
 	ringGroups = partition_rings(rings)
-
-	ring_analysis(ringGroups, mol)
+	ring_analysis(ringGroups)
+	ring_construction(ringGroups)
 
 	# Pango markup for debug window
 	debugText += "<b>Informal Name</b>:\n%s\n\n" % informalName
@@ -231,7 +230,7 @@ def parse_smiles_text(smiles, informalName=None):
 	debugText += "\n\n<b><u>Constructed Ring Groups</u></b>\n"
 
 	for group in ringGroups:
-		construct_group(group)
+		#construct_group(group)
 		# XXX TEMP DEBUG
 		debugText += "\n<i>Ring Group (in Peel Order)</i>\n"
 		i = 0

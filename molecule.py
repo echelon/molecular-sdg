@@ -53,8 +53,10 @@ class Molecule(object):
 		self.alphaAtoms = None
 		self.betaAtoms = None
 
-		# Ring system
-		self.ringSystem = None
+		# Rings and chains
+		self.chains = None
+		self.rings = None
+		self.ringGroups = None
 
 		# Smiles text, etc.
 		self.smiles = None

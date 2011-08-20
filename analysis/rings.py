@@ -1,12 +1,199 @@
 """
-Ring Construction picks up where Ring Analysis left off.
-It is the process of determining the ring coordinates.
+Ring analysis yeilds new information from the ring sets we perceived.
+It consists of two subphases:
+	1. Ring Peeling
+	2. Ring Construction 
+
+This code is adapted from [Helson].
 """
 
+from ring import Ring, RingGroup, RING_TYPES, Point
 from math import *
 import sys
 
-from ring import RING_TYPES, Point
+"""
+PUBLIC IFACE
+"""
+
+def ring_analysis(ringGroups):
+	"""
+	Perform ring analysis using the ring peeling technique.
+	This is a two-stage algorithm adapted from [Helson].
+	"""
+	for rg in ringGroups:
+		# TODO: Repeat again with license for bridged systems. 
+		rg.peelOrder = _assign_ring_types(rg)
+
+def ring_construction(ringGroups):
+	"""
+	TODO: DOC
+	"""
+	for rg in ringGroups:
+		_construct_group(rg)
+
+
+"""
+RING PEELING CODE
+"""
+
+def _assign_ring_types(remainingRings):
+	"""
+	TODO: DOC
+	"""
+
+	def select_fused_spiro_ring(remainingRings):
+		"""
+		Select the next remaining fused (or spiro) ring to peel.
+		The ring chosen has the smallest connectivity with the other
+		remaining rings.
+		"""
+		bestRingPos = None
+		minCount = 10000000 # Nothing should have this many shared edges
+
+		for i in range(len(remainingRings)):
+			ring = remainingRings[i]
+
+			# Ring cannot be a central ring. 
+			if ring.isCentralRing(remainingRings):
+				continue
+
+			# Ring cannot be a bridge to other rings. 
+			# FIXME: Can speed this up by taking out both rings at once
+			isBridge = False
+			for r in remainingRings:
+				if r is ring:
+					continue
+				if ring.isBridgedTo(r):
+					isBridge = True
+					break
+
+			if isBridge:
+				continue
+
+			# Count the number of bonds shared with other unassigned 
+			# rings.
+			# FIXME: Wickedly inefficient. 
+			count = 0
+			for bond in ring.bonds:		
+				for r in remainingRings:
+					if ring is r:
+						continue
+					if bond in r.bonds:
+						count += 1
+
+			# XXX/TODO/FIXME:
+			# I am unclear about Helson's terminology, but it makes 
+			# sense just to skip the rings.
+			if count > 3:
+				# ring.type = RING_TYPES.IRREGULAR
+				continue
+
+			if minCount > count:
+				minCount = count
+				bestRingPos = i
+
+		# Best ring to peel.
+		# Could be 'None'
+		return bestRingPos
+
+	def select_bridged_ring(remainingRings):
+		"""
+		Select the next remaining bridged ring to peel.
+		The ring chosen has the smallest connectivity with the other
+		remaining rings.
+		"""
+		bestRingPos = None
+		minCount = 10000000 # Nothing should have this many shared edges
+
+		for i in range(len(remainingRings)):
+			ring = remainingRings[i]
+
+			# Ring cannot be a central ring
+			if ring.isCentralRing(remainingRings):
+				continue
+
+			# Count the number of bonds shared with other unassigned
+			# rings.
+			# FIXME: Wickedly inefficient. 
+			count = 0
+			for bond in ring.bonds:		
+				for r in remainingRings:
+					if ring is r:
+						continue
+					if bond in r.bonds:
+						count += 1
+
+			if minCount > count:
+				minCount = count
+				bestRing = ring
+
+		# Best ring to peel.
+		# Could be 'None'
+		return bestRingPos
+
+	"""
+	Analyze and Peel Rings from the Ring System(s).
+	"""
+
+	rings = []
+	for ring in remainingRings:
+		rings.append(ring)
+
+	# Can't work with RingGroup directly, convert to list.
+	remainingRings = list(remainingRings[:])
+
+	peelOrder = []
+
+	while True:
+		# If only one more ring exists, we're done. 
+		# FIXME: Assume license to redesign irregular rings. 
+		if len(remainingRings) == 1:
+			ring = remainingRings[0]
+			remainingRings[0].type = RING_TYPES.CORE
+			peelOrder.append(ring)
+
+		# Select the next best fused/spiro ring, if exists. 
+		ringPos = select_fused_spiro_ring(remainingRings)
+		if ringPos != None:
+			ring = remainingRings.pop(ringPos)
+
+			# Determine if fused or spiro to the remaining rings.
+			rtype = None
+			for r in remainingRings:
+				if ring.isFusedTo(r):
+					rtype = RING_TYPES.FUSED
+					break
+				if ring.isSpiroTo(r):
+					rtype = RING_TYPES.SPIRO
+
+			if not rtype:
+				# XXX: Error!
+				print "Could not determine ring type."
+				rtype = RING_TYPES.FUSED
+
+			ring.type = rtype
+			peelOrder.append(ring)
+			continue
+
+		# Select the next best bridged ring.
+		ringPos = select_bridged_ring(remainingRings)
+		if ringPos != None:
+
+			ring = remainingRings.pop(ringPos)
+			ring.type = RING_TYPES.BRIDGED
+			peelOrder.append(ring)
+			continue
+
+		# Incomplete assignment... we have to terminate.
+		# TODO/FIXME: print "Incomplete assignment. Break."
+		break
+
+	return peelOrder
+
+
+"""
+RING CONSTRUCTION
+"""
 
 # TODO: Bridged attachment
 # TODO: Spiro attachment
@@ -14,7 +201,7 @@ from ring import RING_TYPES, Point
 # TODO: Irregular core positioning
 # FIXME: cw/ccw direction handling (how does it work?)
 
-def construct_group(ringGroup):
+def _construct_group(ringGroup):
 	"""
 	Construct the coordinates, CFS, etc. for a ring group.
 	Follows from [Helson] p~335
@@ -39,7 +226,7 @@ def construct_group(ringGroup):
 		b = fusionAtoms[1]
 
 		# Copy already known fused-edge positions to the ring
-		# They'll be used in the regular_polygon() procedure. 
+		# They'll be used in the _regular_polygon() procedure. 
 		ring.pos[ring.index(a)] = fusionRing.pos[fusionRing.index(a)]
 		ring.pos[ring.index(b)] = fusionRing.pos[fusionRing.index(b)]
 
@@ -91,7 +278,7 @@ def construct_group(ringGroup):
 			ring.swapped = True # XXX/TEMPORARY: BOOL IS DEBUG ONLY
 			a, b = b, a
 
-		positions = regular_polygon(ring, atomA=a, atomB=b, 
+		positions = _regular_polygon(ring, atomA=a, atomB=b, 
 									bondLen=50.0, direc='cw')
 
 		# Map positions.
@@ -138,7 +325,7 @@ def construct_group(ringGroup):
 	if core.type != RING_TYPES.CORE:
 		raise Exception, "Last Ring from Ring Peeling is not Core!"
 
-	positions = regular_polygon(core, bondLen=50.0, direc='cw')
+	positions = _regular_polygon(core, bondLen=50.0, direc='cw')
 
 	core.centerPos = positions['center']
 	for i in range(len(positions['ring'])):
@@ -161,7 +348,7 @@ def construct_group(ringGroup):
 	return
 
 # TODO for regular_polygon: handle cw/ccw. Still not sure how it works.
-def regular_polygon(ring, atomA=None, atomB=None, bondLen=100.0, direc='cw'):
+def _regular_polygon(ring, atomA=None, atomB=None, bondLen=100.0, direc='cw'):
 	"""
 	Calculate the coordinate positions for a regular polygon.
 

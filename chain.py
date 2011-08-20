@@ -26,7 +26,7 @@ class Chain(tuple):
 		Chain Constructor
 		Must specify the atom path for the chain. 
 		"""
-		self.caps = [] # There are two end caps. 
+		self.caps = [-1, -1] # There are two end caps. 
 		self.zigzag = [] # Zigzag pattern along the chain from {L,R}.
 		self.invertOk = False # Whether the chain may be inverted.  
 

@@ -5,7 +5,6 @@ pygtk.require('2.0')
 import gtk
 
 from math import radians, sin, cos
-from sdg.ring_construction import *
 
 class Window(object):
 
