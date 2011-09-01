@@ -36,9 +36,8 @@ from perception.chains import *
 # Analysis Phase
 from analysis.rings import *
 
-class Globals(object):
-	"""Used as a Global Dictionary."""
-	pass
+# Assembly Phase
+from assembly import * 
 
 def redraw():
 	"""
@@ -212,8 +211,12 @@ def parse_smiles_text(smiles, informalName=None):
 	# Perception algorithms. 
 	rings = identify_rings(mol)
 	chains = identify_chains(mol, rings)
-	
-	print chains
+
+	# TODO/DEBUG	
+	seed = 0
+	substituent_angular_spacing(mol, seed, isHeadAtom=True)
+
+	#sys.exit()
 
 	# Ring analysis
 	ringGroups = partition_rings(rings)
@@ -249,6 +252,10 @@ def parse_smiles_text(smiles, informalName=None):
 	window.setSmilesLabel(smiles)
 	window.setInformalLabel(informalName)
 	window.setDebugLabel(debugText)
+
+class Globals(object):
+	"""Used as a Global Dictionary."""
+	pass
 
 def gui_draw_callback():
 	redraw()

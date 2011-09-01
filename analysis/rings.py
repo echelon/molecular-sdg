@@ -1,8 +1,12 @@
 """
 Ring analysis yeilds new information from the ring sets we perceived.
-It consists of two subphases:
-	1. Ring Peeling
-	2. Ring Construction 
+Analysis consists of two subphases:
+
+	1. Ring Peeling, which determines the order that the rings are to
+	   be constructed in.
+
+	2. Ring Construction, which assigns preliminary coordinates to the
+	   rings in the order they were peeled.
 
 This code is adapted from [Helson].
 """
@@ -12,8 +16,10 @@ from math import *
 import sys
 
 """
-PUBLIC IFACE
+PUBLIC INTERFACE
 """
+
+# TODO: Repeat with license for bridged systems. 
 
 def ring_analysis(ringGroups):
 	"""
@@ -24,6 +30,11 @@ def ring_analysis(ringGroups):
 		# TODO: Repeat again with license for bridged systems. 
 		rg.peelOrder = _assign_ring_types(rg)
 
+# TODO: Spiro and Bridged attachment
+# TODO: Open Polygon coordinate positioning
+# TODO: Handle irregular cores
+# FIXME: verify correct cw/ccw direction handling
+
 def ring_construction(ringGroups):
 	"""
 	TODO: DOC
@@ -31,9 +42,8 @@ def ring_construction(ringGroups):
 	for rg in ringGroups:
 		_construct_group(rg)
 
-
 """
-RING PEELING CODE
+RING PEELING
 """
 
 def _assign_ring_types(remainingRings):
@@ -190,16 +200,9 @@ def _assign_ring_types(remainingRings):
 
 	return peelOrder
 
-
 """
 RING CONSTRUCTION
 """
-
-# TODO: Bridged attachment
-# TODO: Spiro attachment
-# TODO: Open Polygon positioning
-# TODO: Irregular core positioning
-# FIXME: cw/ccw direction handling (how does it work?)
 
 def _construct_group(ringGroup):
 	"""
@@ -347,7 +350,6 @@ def _construct_group(ringGroup):
 
 	return
 
-# TODO for regular_polygon: handle cw/ccw. Still not sure how it works.
 def _regular_polygon(ring, atomA=None, atomB=None, bondLen=100.0, direc='cw'):
 	"""
 	Calculate the coordinate positions for a regular polygon.
