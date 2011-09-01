@@ -2,6 +2,8 @@
 TODO: Doc.
 """
 
+from weights import ATOMIC_WEIGHTS
+
 # TODO: Add a __key__ check for assignment
 # 		Any invalid keys should not support assignment!
 #
@@ -29,6 +31,8 @@ class Molecule(object):
 			* isotopes -- Atom isotopes. Default to 0, meaning regular.
 			* ringSystem -- Rings in the system.
 			* smiles -- Smiles text.
+
+		Everything else is calculated from the supplied information.
 		"""
 
 		# Number of atoms. Typically non-Hydrogen included.
@@ -58,13 +62,19 @@ class Molecule(object):
 		self.rings = None
 		self.ringGroups = None
 
-		# Smiles text, etc.
+		# Smiles text, etc. (optional)
 		self.smiles = None
 		self.informalName = None
 
 		# Circular Free Sweep (CFS) for each atom. Only used in ring
 		# construction of analysis phase and later again in assembly.
 		self.cfs = [{'hi':0, 'lo':0} for x in range(self.size)]
+
+		# Calculated number of hydrogens for each atom.
+		self.hydrogens = None
+
+		# Calculated molecular weight
+		self.weight = 0.0
 
 		"""
 		=== Processing Functions === 
@@ -178,6 +188,50 @@ class Molecule(object):
 				degrees[i] = deg
 			return tuple(degrees)
 
+		def calculate_hydrogens(types, hybridizations, neighbors):
+			"""
+			Calculate number of hydrogens attached to each atom.
+			Factors in hybridization state and number of neighbors.
+			"""
+			substituents = {'sp3': 4, 'sp2': 3, 'sp': 2}
+			sz = len(types)
+			hydrogens = [0 for x in range(sz)]
+
+			for i in range(sz):
+				# Number of subtituents is based on hybridization
+				h = hybridizations[i]
+				sub = 0
+				if h in substituents:
+					sub = substituents[h]
+
+				# Minus number of current substituents
+				sub -= len(neighbors[i])
+
+				# Certain atoms prefer lone pair of electrons rather
+				# than substituents (valency). 
+				aType = types[i].upper()
+				if aType == 'N':
+					sub -= 1
+				elif aType == 'O':
+					sub -= 2
+				elif aType in ['F', 'CL', 'BR']:
+					sub -= 3
+
+				if sub > 0:
+					hydrogens[i] = sub
+			return tuple(hydrogens)
+
+		def calculate_molecular_weight(types, hydrogens):
+			"""Calculate molecular weight."""
+			weight = 0.0
+			for atom in types:
+				weight += ATOMIC_WEIGHTS[atom.upper()]
+
+			hWeight = ATOMIC_WEIGHTS['H']
+			for i in range(len(hydrogens)):
+				weight += hydrogens[i] * hWeight
+			return weight
+
 		"""
 		Setup from constructor input.
 		"""
@@ -199,7 +253,13 @@ class Molecule(object):
 		self.hybridizations = compute_hybridizations(bondOrderMat, 
 								self.alphaAtoms)
 
+		self.hydrogens = calculate_hydrogens(types, self.hybridizations,
+								self.alphaAtoms)
+	
+		self.weight = calculate_molecular_weight(types, self.hydrogens)
+
 		self.smiles = smiles
+
 
 	def __setattr__(self, k, v):
 		"""Limit the ability to manage the object's dictionary."""
@@ -255,13 +315,14 @@ class Molecule(object):
 		txt += "====== Molecule Report ======\n\n"
 		txt += "Name: %s\n" % str(self.informalName)
 		txt += "Smiles: %s\n" % str(self.smiles)
-		txt += "\n"
 
+		txt += "\nMolecular Weight: %f" % self.weight
 		txt += "\nTypes: %s" % str(self.types)
 		txt += "\nCharges: %s" % str(self.charges)
 		txt += "\nIsotopes: %s" % str(self.isotopes)
 		txt += "\nHybridizations: %s" % str(self.hybridizations)
 		txt += "\nDegrees: %s" % str(self.degrees)
+		txt += "\nHydrogens: %s" % str(self.hydrogens)
 
 		# XXX: Won't print >= 100 atoms nicely. Not that it would be
 		# wise to print out such systems in the terminal...
