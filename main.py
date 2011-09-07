@@ -212,6 +212,9 @@ def parse_smiles_text(smiles, informalName=None):
 	rings = identify_rings(mol)
 	chains = identify_chains(mol, rings)
 
+	mol.setRings(rings)
+	mol.setChains(chains)
+
 	# TODO/DEBUG	
 	seed = 0
 	substituent_angular_spacing(mol, seed, isHeadAtom=True)

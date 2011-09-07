@@ -57,12 +57,16 @@ class Molecule(object):
 		self.alphaAtoms = None
 		self.betaAtoms = None
 
-		# Rings and chains
+		# Rings and chains for the molecule
 		self.chains = None
 		self.rings = None
 		self.ringGroups = None
 
-		# Smiles text, etc. (optional)
+		# Per-atom flags set in perception, etc. phases.
+		self.inRing = [False for x in range(self.size)]
+		self.inChain = [False for x in range(self.size)] # Not capping subst!
+
+		# Reference to smiles text, etc. (optional)
 		self.smiles = None
 		self.informalName = None
 
@@ -260,6 +264,32 @@ class Molecule(object):
 
 		self.smiles = smiles
 
+	def setRings(self, rings):
+		"""
+		Set the rings that were found in ring perception.
+		This sets certain flags.
+		"""
+		# Set ring membership flags.
+		self.inRing = [False for x in range(self.size)]
+		for ring in rings:
+			for atom in ring:
+				self.inRing[atom] = True
+
+		self.rings = rings
+
+	def setChains(self, chains):
+		"""
+		Set the chains that were found in chain perception.
+		This sets certain flags.
+		"""
+		# Set chain membership flags.
+		# XXX: This does not include capping substituents!
+		self.inChain = [False for x in range(self.size)]
+		for chain in chains:
+			for atom in chain:
+				self.inChain[atom] = True
+
+		self.chains = chains 
 
 	def __setattr__(self, k, v):
 		"""Limit the ability to manage the object's dictionary."""
@@ -323,6 +353,14 @@ class Molecule(object):
 		txt += "\nHybridizations: %s" % str(self.hybridizations)
 		txt += "\nDegrees: %s" % str(self.degrees)
 		txt += "\nHydrogens: %s" % str(self.hydrogens)
+
+		l = [x for x in range(self.size) if self.inRing[x]]
+		txt += "\n\nRing atoms: %s" % l
+		
+		l = [x for x in range(self.size) if self.inChain[x]]
+		txt += "\nChain atoms: %s" % l
+
+		txt += "\n\n"
 
 		# XXX: Won't print >= 100 atoms nicely. Not that it would be
 		# wise to print out such systems in the terminal...
