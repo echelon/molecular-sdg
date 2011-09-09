@@ -125,10 +125,13 @@ class Ring(tuple):
 		# Ring-Local CFS (in radians) for every atom in the ring.
 		self.cfs = [{'hi':0, 'lo':0} for x in range(len(self[:]))]
 
-		# XXX/TEMPORARY DEBUG
+		# TODO: Ring angle. Needed for assembly
+		self.angle = 0
+
+		# XXX/TEMPORARY DEBUG FLAGS
 		self.fusionAtom = [False for x in range(len(self))]
 		self.swapped = False
-		# END XXX/TEMPORARY DEBUG
+		# END XXX/TEMPORARY DEBUG FLAGS
 
 	def getDirection(self):
 		"""Determine which direction the ring is directed."""
@@ -392,6 +395,8 @@ class RingGroup(tuple):
 		# Connection tables. The subscripts and values used are NOT the
 		# atom labels, rather they are the subscripts internal to the
 		# ring.
+		# TODO: Better documentation. I already don't remember what I wrote
+		# these for...
 		self.spiroTo = [[] for x in range(len(self))]
 		self.fusedTo = [[] for x in range(len(self))]
 		self.bridgedTo = [[] for x in range(len(self))]

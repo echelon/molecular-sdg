@@ -3,6 +3,7 @@ TODO: Doc.
 """
 
 from weights import ATOMIC_WEIGHTS
+from ring import Point # TODO: Move elsewhere
 
 # TODO: Add a __key__ check for assignment
 # 		Any invalid keys should not support assignment!
@@ -36,7 +37,7 @@ class Molecule(object):
 		"""
 
 		# Number of atoms. Typically non-Hydrogen included.
-		self.size = 0
+		self.size = len(connectMat)
 
 		# Connectivity matrix 
 		self.connectMat = None
@@ -70,9 +71,14 @@ class Molecule(object):
 		self.smiles = None
 		self.informalName = None
 
-		# Circular Free Sweep (CFS) for each atom. Only used in ring
+		# Circular Free Sweep (CFS) for each atom. Used in ring
 		# construction of analysis phase and later again in assembly.
+		self.cfsInitialized = [False for x in range(self.size)]
 		self.cfs = [{'hi':0, 'lo':0} for x in range(self.size)]
+
+		# Drawing data --
+		self.isPlaced = [False for x in range(self.size)]
+		self.pos = [Point() for x in range(self.size)]
 
 		# Calculated number of hydrogens for each atom.
 		self.hydrogens = None
@@ -242,8 +248,6 @@ class Molecule(object):
 
 		# FIXME: Handle data that isn't supplied.
 
-		self.size = len(connectMat)
-
 		self.connectMat = immutable(connectMat)
 		self.bondOrderMat = immutable(bondOrderMat)
 
@@ -306,11 +310,14 @@ class Molecule(object):
 				'ringSystem',
 				'smiles',
 				'informalName',
+				'inRing',
+				'inChain',
 		)
 		#if k not in valid:
 		#	raise Exception("Cannot set as `%s`, invalid key." % k)
-		if k in self.__dict__ and self.__dict__[k]:
-			raise Exception("Cannot reset `%s`." %k)
+		### TODO/TEMP commented out
+		###if k in self.__dict__ and self.__dict__[k]:
+		###	raise Exception("Cannot reset `%s`." %k)
 
 		self.__dict__[k] = v
 

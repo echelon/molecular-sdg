@@ -2,6 +2,9 @@
 Chain-related data structures and functions.
 """
 
+# Constant: Chain angle.
+CHAIN_ANGLE = 120
+
 class Chain(tuple):
 	"""
 	Chain Data Structure

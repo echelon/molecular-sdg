@@ -6,7 +6,7 @@ Diagram Generation (SDG) work that I am doing. There are several files
 in this repository that are not relevant anymore, but contain an earlier
 approach at drawing that I wish to retain for the time being.
 
-At present, the code I am working on is in 'matrix.py' and 'smiles.py'.
+At present, the code I am working on is in 'molecule.py' and 'smiles.py'.
 """
 
 # Python libs
@@ -39,7 +39,112 @@ from analysis.rings import *
 # Assembly Phase
 from assembly import * 
 
+# XXX WORK IN PROGRESS.
+# Should support everything--chains, rings, etc.
 def redraw():
+	"""
+	Update the image.
+	"""
+	
+	drawable = Globals.drawable
+	mol = Globals.molecule
+	window = Globals.window
+
+	if not drawable.window or not Globals.molecule:
+		# Not ready
+		return
+
+	ctx = drawable.window.cairo_create()
+
+	# Size the window
+	size = drawable.window.get_size()
+	#center = get_average_position(ringGroups)
+	
+	# CLEAR
+	pat = SolidPattern(1.0, 1.0, 1.0, 1.0)
+	ctx.rectangle(-8000, -8000, 800000, 800000)
+	ctx.set_source(pat)
+	ctx.fill()
+
+	# Draw in center of context
+	#mat = cairo.Matrix(1, 0, 0, 1, 
+	#		size[0]/2 + center[0]*-1, size[1]/2 + center[1]*-1)
+	#ctx.transform(mat)
+
+	# Scale the image
+	scale = window.getScale()
+	mat = cairo.Matrix(scale, 0, 0, scale, 0, 0)
+	ctx.transform(mat)
+
+	def draw_edge(ptA, ptB, color, xOff=0, yOff=0):
+		"""
+		JUST A TEST. More sophisticated later!
+		"""
+		ctx.set_source_rgb(color['r'], color['g'], color['b'])
+		ctx.new_path()
+		ctx.move_to(ptA.x + xOff, ptA.y + yOff)
+		ctx.line_to(ptB.x + xOff, ptB.y + yOff)
+		ctx.close_path()
+		ctx.stroke()
+
+	# TODO: DEBUG ONLY
+	# XXX: Not very well documented..
+	"""
+	labels = {}
+	def add_label(pt, atomNum=0):
+		x = int(round(ceil(pt.x), -1))
+		y = int(round(ceil(pt.y), -1))
+		p = "%d,%d" % (x, y)
+		if p in labels:
+			if atomNum not in labels[p]['atoms']:
+				labels[p]['atoms'].append(atomNum)
+			return
+		labels[p] = {'atoms': [atomNum], 'pos': pt}
+
+	def draw_labels():
+		def label_position(pt, label=''):
+			ctx.move_to(pt.x, pt.y)
+			ctx.set_source_rgb(0, 0, 0)
+			ctx.show_text(label)
+
+		for lab in labels.values():
+			atoms = "%d" % lab['atoms'][0]
+			for atom in lab['atoms'][1:]:
+				atoms += ", %d" % atom
+			pt = lab['pos']
+			txt = "%s (%d, %d)" % (atoms, int(pt.x), int(pt.y))
+			label_position(lab['pos'], txt)
+	"""
+
+	for atom in range(mol.size):
+		# XXX XXX XXX XXX COLOR AND RAND OFFSET HELP DEBUG
+		color = {
+			'r': random.uniform(0.0, 0.6),
+			'g': random.uniform(0.0, 0.6),
+			'b': random.uniform(0.0, 0.6),
+		}
+		randX = 0
+		randY = 0
+		#randX = random.randint(0, 10)
+		#randY = random.randint(0, 10)
+
+		for nbr in mol.alphaAtoms[atom]:
+			bond = frozenset([atom, nbr])
+			bond = list(bond)
+			atomA = bond[0]
+			atomB = bond[1]
+			ptA = mol.pos[atom]
+			ptB = mol.pos[nbr]
+
+			print ptA
+			print ptB
+
+			draw_edge(ptA, ptB, color, randX, randY)
+
+	print "..."
+
+
+def redraw_OLD_BUT_WORKED():
 	"""
 	Update the image.
 	"""
@@ -217,9 +322,9 @@ def parse_smiles_text(smiles, informalName=None):
 
 	# TODO/DEBUG	
 	seed = 0
-	substituent_angular_spacing(mol, seed, isHeadAtom=True)
+	#substituent_angular_spacing(mol, seed, isHeadAtom=True)
 
-	#sys.exit()
+	assemble(mol)
 
 	# Ring analysis
 	ringGroups = partition_rings(rings)
