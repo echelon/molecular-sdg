@@ -306,6 +306,7 @@ def parse_smiles_text(smiles, informalName=None):
 	debugText = Globals.debugText
 
 	mol = smiles_to_molecule(smiles)
+	mol.informalName = informalName
 
 	if mol == Globals.molecule:
 		print "\n>>> Same molecule.\n"
@@ -331,14 +332,16 @@ def parse_smiles_text(smiles, informalName=None):
 	ring_analysis(ringGroups)
 	ring_construction(ringGroups)
 
+	mol.setRingGroups(ringGroups)
+
 	# Pango markup for debug window
-	debugText += "<b>Informal Name</b>:\n%s\n\n" % informalName
+	debugText += "<b><u><big>Data Structures</big></u></b>\n\n"
 	debugText += "<b>Ring Groups</b>: %d\n" % len(ringGroups)
 	debugText += "<b>Rings</b>: %d" % len(rings)
 	debugText += "\n<b>Chains</b>: %d" % len(chains)
-	debugText += "\n\n<big><b>Molecule Report</b></big>:\n<tt>%s</tt>" % \
-			markup_escape_text(str(mol))
-	debugText += "\n\n<b><u>Constructed Ring Groups</u></b>\n"
+	debugText += "\n\n<big><u><b>Molecule Report</b></u></big>\n\n"
+	debugText += "<tt>%s</tt>" % markup_escape_text(str(mol))
+	debugText += "\n\n<big><b><u>Ring Group Report</u></b></big>\n"
 
 	for group in ringGroups:
 		#construct_group(group)

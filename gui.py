@@ -35,8 +35,9 @@ class Window(object):
 
 		self.debugText = gtk.Label()
 		self.debugText.set_padding(0, 0)
+		self.debugText.set_line_wrap(True)
 		scroll.add_with_viewport(self.debugText)
-		scroll.set_size_request(300, 100) # Min size
+		scroll.set_size_request(450, 100) # Min size
 		#print scroll.get_placement()
 		#scroll.set_placement(gtk.CORNER_BOTTOM_RIGHT)
 

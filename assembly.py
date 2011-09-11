@@ -78,7 +78,7 @@ def angular_spacing(mol, seedAtom, isHeadAtom=False):
 
 	# Correct for chain fixed angle spacing. 
 	# Only if seed is a core chain atom (not end cap). 
-	if mol.inChain[seedAtom]:
+	if mol.isInChain[seedAtom]:
 		numSubstituent -= 1
 		angularDemand += CHAIN_ANGLE
 
@@ -214,10 +214,10 @@ def substituent_placement(mol, seedAtom, isHeadAtom=False, drawQueue=[]):
 		pass
 
 	# Draw depending on seed atom type
-	if mol.inRing[seedAtom]:
+	if mol.isInRing[seedAtom]:
 		ring_subst_placement()
 
-	elif mol.inChain[seedAtom]:
+	elif mol.isInChain[seedAtom]:
 		chain_subst_placement()
 
 	else:

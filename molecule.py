@@ -64,8 +64,12 @@ class Molecule(object):
 		self.ringGroups = None
 
 		# Per-atom flags set in perception, etc. phases.
-		self.inRing = [False for x in range(self.size)]
-		self.inChain = [False for x in range(self.size)] # Not capping subst!
+		self.isInRing = [False for x in range(self.size)]
+		self.isInChain = [False for x in range(self.size)] # Not capping subst!
+
+		# Per-atom reference to ring group and chain membership, if exists
+		self.chainRef = [None for x in range(self.size)]
+		self.ringGroupRef = [None for x in range(self.size)]
 
 		# Reference to smiles text, etc. (optional)
 		self.smiles = None
@@ -273,25 +277,44 @@ class Molecule(object):
 		Set the rings that were found in ring perception.
 		This sets certain flags.
 		"""
-		# Set ring membership flags.
-		self.inRing = [False for x in range(self.size)]
+		# Set ring membership flags and references
+		self.isInRing = [False for x in range(self.size)]
 		for ring in rings:
 			for atom in ring:
-				self.inRing[atom] = True
+				self.isInRing[atom] = True
 
 		self.rings = rings
+
+	def setRingGroups(self, ringGroups):
+		"""
+		Sets the ring groups that were found in ring perception.
+		Sets certain flags an references.
+		"""
+		# Set ring group references
+		def ring_group_membership(atom):
+			for ringGroup in ringGroups:
+				for ring in ringGroup:
+					if atom in ring:
+						return ringGroup
+			return None
+
+		self.ringGroupRef = [None for x in range(self.size)]
+		for atom in range(self.size):
+			self.ringGroupRef[atom] = ring_group_membership(atom)
 
 	def setChains(self, chains):
 		"""
 		Set the chains that were found in chain perception.
-		This sets certain flags.
+		This sets certain flags and references.
 		"""
-		# Set chain membership flags.
+		# Set chain membership flags and references
 		# XXX: This does not include capping substituents!
-		self.inChain = [False for x in range(self.size)]
+		self.chainRef = [None for x in range(self.size)]
+		self.isInChain = [False for x in range(self.size)]
 		for chain in chains:
 			for atom in chain:
-				self.inChain[atom] = True
+				self.chainRef[atom] = chain
+				self.isInChain[atom] = True
 
 		self.chains = chains 
 
@@ -310,8 +333,8 @@ class Molecule(object):
 				'ringSystem',
 				'smiles',
 				'informalName',
-				'inRing',
-				'inChain',
+				'isInRing',
+				'isInChain',
 		)
 		#if k not in valid:
 		#	raise Exception("Cannot set as `%s`, invalid key." % k)
@@ -349,7 +372,6 @@ class Molecule(object):
 	def __str__(self):
 		"""String representation of the molecule for debugging."""
 		txt = ""
-		txt += "====== Molecule Report ======\n\n"
 		txt += "Name: %s\n" % str(self.informalName)
 		txt += "Smiles: %s\n" % str(self.smiles)
 
@@ -361,10 +383,10 @@ class Molecule(object):
 		txt += "\nDegrees: %s" % str(self.degrees)
 		txt += "\nHydrogens: %s" % str(self.hydrogens)
 
-		l = [x for x in range(self.size) if self.inRing[x]]
+		l = [x for x in range(self.size) if self.isInRing[x]]
 		txt += "\n\nRing atoms: %s" % l
 		
-		l = [x for x in range(self.size) if self.inChain[x]]
+		l = [x for x in range(self.size) if self.isInChain[x]]
 		txt += "\nChain atoms: %s" % l
 
 		txt += "\n\n"
@@ -385,6 +407,7 @@ class Molecule(object):
 			else:
 				line2 += " "
 
+		txt += "CONNECTION TABLE:"
 		txt += "\n%s" % line1
 		txt += "\n%s" % line2
 		txt += "\n"
@@ -427,9 +450,9 @@ class Molecule(object):
 			ln += str(self.betaAtoms[i])
 			txt += "%s\n" % ln
 
-		txt += "\nInformal Name: %s" % str(self.informalName)
-		txt += "\nSmiles: %s" % str(self.smiles)
-		txt += "\n\n====== End Molecule Report======"
+		# DEBUG: Print second time 
+		#txt += "\nInformal Name: %s" % str(self.informalName)
+		#txt += "\nSmiles: %s" % str(self.smiles)
 
 		return txt
 
