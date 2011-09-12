@@ -29,6 +29,7 @@ class Window(object):
 		scroll = gtk.ScrolledWindow()
 		scroll.show()
 		scroll.set_border_width(10)
+		self.scroll = scroll
 		self.hbox.add(scroll)
 
 		self.informalNameLabel = gtk.Label() # TODO: Remove.
@@ -54,15 +55,23 @@ class Window(object):
 		spin.show()
 		self.vbox.add(spin)
 
-		def exitkey(key):
-			if key == gtk.keysyms.Escape:
+		def exitkey(ev):
+			# ESC 
+			if ev.keyval == gtk.keysyms.Escape:
 				gtk.main_quit()
+
+			# CTRL-C / CTRL-D
+			keyname = gtk.gdk.keyval_name(ev.keyval)
+			ekey = ['C', 'D']
+			if ev.state == gtk.gdk.CONTROL_MASK and keyname.upper() in ekey:
+				gtk.main_quit()
+
 			return False # Bubble event
 
 		# Callbacks
 		self.window.connect('destroy', lambda w: gtk.main_quit())
 		self.window.connect('delete_event', lambda w, e: gtk.main_quit())
-		self.window.connect('key-press-event', lambda w, e: exitkey(e.keyval))
+		self.window.connect('key-press-event', lambda w, e: exitkey(e))
 		self.drawable.connect('expose-event', self.expose)
 		self.molEntry.connect('activate', self.smilesChanged)
 		self.scale.connect('value-changed', self.scaleChanged)
