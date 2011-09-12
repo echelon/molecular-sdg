@@ -31,7 +31,14 @@ class Chain(tuple):
 		"""
 		self.caps = [-1, -1] # There are two end caps. 
 		self.zigzag = [] # Zigzag pattern along the chain from {L,R}.
-		self.invertOk = False # Whether the chain may be inverted.  
+		self.invertOk = False # Whether the chain may be inverted.
+
+		# Zigzag direction.
+		# First and last items do not have zigzag
+		# TODO: Support opposite zigzag pattern (complement of this)
+		# ie, L->R, R->L
+		self.zigzag = ['L' if (x % 2) == 0 else 'R' \
+				for x in range(len(self[:]) - 2)]
 
 	def __repr__(self):
 		return "chain[%d, %s, %d]" % (self.caps[0], str(self[:]), self.caps[1])

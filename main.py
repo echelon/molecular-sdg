@@ -71,12 +71,24 @@ def redraw():
 	#		size[0]/2 + center[0]*-1, size[1]/2 + center[1]*-1)
 	#ctx.transform(mat)
 
+	# XXX XXX DEBUG ONLY
+	mat = cairo.Matrix(1, 0, 0, 1,
+			size[0]/2 - 100, size[1]/2 - 100)
+	ctx.transform(mat)
+	# XXX XXX DEBUG ONLY
+
 	# Scale the image
 	scale = window.getScale()
+	scale *= 0.5 # XXX XXX DEBUG ONLY
 	mat = cairo.Matrix(scale, 0, 0, scale, 0, 0)
 	ctx.transform(mat)
 
-	def draw_edge(ptA, ptB, color, xOff=0, yOff=0):
+	window.debugText.hide() # XXX XXX DEBUG ONLY
+	window.debugText.set_size_request(0,0) # XXX XXX DEBUG ONLY
+	window.scroll.hide()
+	window.window.resize(300, 500)
+
+	def draw_edge(ptA, ptB, color, xOff=0, yOff=0, labA=0, labB=0):
 		"""
 		JUST A TEST. More sophisticated later!
 		"""
@@ -87,34 +99,18 @@ def redraw():
 		ctx.close_path()
 		ctx.stroke()
 
-	# TODO: DEBUG ONLY
-	# XXX: Not very well documented..
-	"""
-	labels = {}
-	def add_label(pt, atomNum=0):
-		x = int(round(ceil(pt.x), -1))
-		y = int(round(ceil(pt.y), -1))
-		p = "%d,%d" % (x, y)
-		if p in labels:
-			if atomNum not in labels[p]['atoms']:
-				labels[p]['atoms'].append(atomNum)
-			return
-		labels[p] = {'atoms': [atomNum], 'pos': pt}
+		#print "%d->%d | %s to %s" % (labA, labB, ptA, ptB)
 
-	def draw_labels():
-		def label_position(pt, label=''):
-			ctx.move_to(pt.x, pt.y)
-			ctx.set_source_rgb(0, 0, 0)
-			ctx.show_text(label)
+	#print "\n"
 
-		for lab in labels.values():
-			atoms = "%d" % lab['atoms'][0]
-			for atom in lab['atoms'][1:]:
-				atoms += ", %d" % atom
-			pt = lab['pos']
-			txt = "%s (%d, %d)" % (atoms, int(pt.x), int(pt.y))
-			label_position(lab['pos'], txt)
-	"""
+	drawnBonds = []
+
+	# XXX DEBUG ONLY: DO NOT DRAW FIRST OR LAST ATOM:
+	last = mol.size - 1
+	for a in range(mol.size):
+		#drawnBonds.append(frozenset([a, 0]))
+		#drawnBonds.append(frozenset([a, last]))
+		pass
 
 	for atom in range(mol.size):
 		# XXX XXX XXX XXX COLOR AND RAND OFFSET HELP DEBUG
@@ -125,8 +121,8 @@ def redraw():
 		}
 		randX = 0
 		randY = 0
-		#randX = random.randint(0, 10)
-		#randY = random.randint(0, 10)
+		randX = random.randint(0, 10)
+		randY = random.randint(0, 10)
 
 		for nbr in mol.alphaAtoms[atom]:
 			bond = frozenset([atom, nbr])
@@ -136,10 +132,13 @@ def redraw():
 			ptA = mol.pos[atom]
 			ptB = mol.pos[nbr]
 
-			print ptA
-			print ptB
+			bond = frozenset(bond)
+			if bond in drawnBonds:
+				continue
+			
+			drawnBonds.append(bond)
 
-			draw_edge(ptA, ptB, color, randX, randY)
+			draw_edge(ptA, ptB, color, randX, randY, atom, nbr)
 
 	print "..."
 
@@ -321,18 +320,15 @@ def parse_smiles_text(smiles, informalName=None):
 	mol.setRings(rings)
 	mol.setChains(chains)
 
-	# TODO/DEBUG	
-	seed = 0
-	#substituent_angular_spacing(mol, seed, isHeadAtom=True)
-
-	assemble(mol)
-
 	# Ring analysis
 	ringGroups = partition_rings(rings)
 	ring_analysis(ringGroups)
 	ring_construction(ringGroups)
 
 	mol.setRingGroups(ringGroups)
+
+	# Assembly phase (TODO: WORK IN PROGRESS)
+	assemble(mol)
 
 	# Pango markup for debug window
 	debugText += "<b><u><big>Data Structures</big></u></b>\n\n"

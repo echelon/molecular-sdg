@@ -6,6 +6,7 @@ TODO: Doc
 from math import * 
 from chain import CHAIN_ANGLE
 from ring import Point # TODO: Move elsewhere
+from util.angles import normalize
 
 def assemble(mol):
 	"""
@@ -18,7 +19,10 @@ def assemble(mol):
 	queue.append(headAtom)
 	isHeadAtom = True
 
+	print "Atom 0 is at (0, 0)"
+
 	mol.pos[headAtom] = Point(0, 0)
+	mol.isPlaced[headAtom] = True
 
 	# Dequeue and draw seed. 
 	while len(queue) > 0:
@@ -28,6 +32,7 @@ def assemble(mol):
 
 
 # XXX: Algorithm 6
+# XXX XXX XXX XXX XXX: Something is VERY WRONG with this algorithm
 # TODO: (1)  PFU Angular demand
 # FIXME/VERIFY: (1) use of CFS[lo] vs hi
 def angular_spacing(mol, seedAtom, isHeadAtom=False):
@@ -40,10 +45,6 @@ def angular_spacing(mol, seedAtom, isHeadAtom=False):
 	angularDemand = 0 # Area taken up by substituent PFUs
 	numSubstituent = 0 # Number of non-PFU substituents 
 
-	# Bonds that have been placed 
-	# Bond is 'unplaced' if either of its atoms is unplaced. 
-	#placedBonds = [] 
-
 	p = [] # Set of adjacent bonds (in PFUs) that have been encountered
 
 	# Work with adjacent, unplaced bonds.
@@ -51,12 +52,14 @@ def angular_spacing(mol, seedAtom, isHeadAtom=False):
 		bond = frozenset([seedAtom, n])
 		inPfu = False
 
+		# Only 'placed' if both atoms are placed.
 		if mol.isPlaced[n] and mol.isPlaced[seedAtom]:
 			continue
 
 		if bond in p:
 			continue
 
+		# Add angle demand of ring substituents.
 		# FIXME: Inefficient
 		for ring in mol.rings:
 			if bond in ring:
@@ -70,7 +73,7 @@ def angular_spacing(mol, seedAtom, isHeadAtom=False):
 				inPfu = True
 				break
 			
-		if inPfu:
+		if not inPfu:
 			numSubstituent += 1
 
 	if isHeadAtom:
@@ -82,15 +85,26 @@ def angular_spacing(mol, seedAtom, isHeadAtom=False):
 		numSubstituent -= 1
 		angularDemand += CHAIN_ANGLE
 
-	# FIXME: Assume CFS lo.
-	# Return final angular spacing calculation
 	ang = 0
+	cfs = mol.cfs[seedAtom]['lo'] # FIXME: Assume CFS lo.
 	try:
-		ang = (mol.cfs[seedAtom]['lo'] - angularDemand) / (numSubstituent + 1)
+		ang = (cfs - angularDemand) / (numSubstituent + 1)
+		return normalize(ang)
 	except:
+		print "Angular Spacing exception occurred... using second algo"
 		pass # TODO: Math exception handle
 
-	return ang
+	return 0
+
+
+def angular_spacing2(mol, seedAtom, isHeadAtom=False):
+	"""
+	Attempts to fix problems with [Helson] algo.
+	"""
+	try:
+		return normalize(360/len(mol.alphaAtoms[seedAtom]))
+	except:
+		return 360
 
 # XXX: Algorithm 7
 # TODO TODO TODO TODO: Entire algorithm.
@@ -158,13 +172,14 @@ def substituent_placement(mol, seedAtom, isHeadAtom=False, drawQueue=[]):
 		Substituent placement for ring seed atom
 		Algorithm 8
 		"""
-		print "ring_subst_placement(%d)" % seedAtom
+		print "\nring_subst_placement(%d)" % seedAtom
 
 		beta = angular_spacing(mol, seedAtom, isHeadAtom)
 		seq = substituent_sequence(mol, seedAtom, isHeadAtom)
 
 		for n in seq:
 			mol.cfs[seedAtom]['lo'] += beta
+			mol.cfs[seedAtom]['lo'] = normalize(mol.cfs[seedAtom]['lo'])
 
 			place_atom(mol, seedAtom, n, False, drawQueue)
 
@@ -177,7 +192,7 @@ def substituent_placement(mol, seedAtom, isHeadAtom=False, drawQueue=[]):
 		Substituent placement for core chain seed atom
 		Algorithm 9
 		"""
-		print "chain_subst_placement(%d)" % seedAtom
+		print "\nchain_subst_placement(%d)" % seedAtom
 
 		beta = angular_spacing(mol, seedAtom, isHeadAtom)
 		seq = substituent_sequence(mol, seedAtom, isHeadAtom)
@@ -192,26 +207,84 @@ def substituent_placement(mol, seedAtom, isHeadAtom=False, drawQueue=[]):
 			if mol.isPlaced[subst]:
 				continue
 
+			cfslo = mol.cfs[seedAtom]['lo']
+			print "\t* cfs.lo (before change): %f" % cfslo
+			print "\t* beta angle: %f" % beta
+			print "\t* FxAS chain angle: %f" % CHAIN_ANGLE
+
+			# Handle chain zigzag.
 			# TODO 'if takes rightward bend...'
 			# If the substituent is in the same chain...
-			rightward = True
-			if subst in chain and rightward:
-				mol.cfs[seedAtom]['lo'] += CHAIN_ANGLE
-			else:
-				mol.cfs[seedAtom]['lo'] += beta
+			rightward = False
+			if chain and subst in chain:
+				z = chain.index(seedAtom)
+				if z < len(chain.zigzag) and chain.zigzag[z].upper() == 'R':
+					rightward = True
 
+			if chain and subst in chain:
+				if rightward:
+					print "\t* R zigzag"
+					mol.cfs[seedAtom]['lo'] += CHAIN_ANGLE
+					mol.cfs[seedAtom]['lo'] = normalize(mol.cfs[seedAtom]['lo'])
+				else:
+					print "\t* L zigzag"
+					print "\t* beta angle: %f" % beta
+					mol.cfs[seedAtom]['lo'] -= beta # XXX
+					mol.cfs[seedAtom]['lo'] = normalize(mol.cfs[seedAtom]['lo'])
+
+			print "\t** NOW CFS.LO IS: %f" % mol.cfs[seedAtom]['lo']
 			place_atom(mol, seedAtom, subst, False, drawQueue)
 
 			# TODO: Double bond stereochemistry. 
 
 	# XXX: Algorithm 10
 	def uncat_subst_placement():
-		#print "uncat_subst_placement(%d)" % seedAtom
-		# TODO TODO TODO this is just a hack
-		print "UNCATEGORIZED/TODO:"
-		for n in mol.alphaAtoms[seedAtom]:
-			place_atom(mol, seedAtom, n, False, drawQueue) # XXX HACK
-		pass
+
+		print "\nuncat_subst_placement(%d)" % seedAtom
+
+		# XXX XXX XXX : Custom algo -- will it fix the problems?
+		angle = angular_spacing2(mol, seedAtom, isHeadAtom)
+		seq = substituent_sequence(mol, seedAtom, isHeadAtom)
+
+		# May be able to make pseudo trigonal planar!
+		# TODO TODO TODO TODO Must also ensure no triple bonds and no
+		# more than two single bonds. Need data structure in Molecule
+		# to keep track of this. I don't want to parse here. 
+		pseudoTrigonal = False
+		if len(mol.alphaAtoms[seedAtom]) == 2: # TODO
+			print "\t* Pseudotrigonal"
+			pseudoTrigonal = True
+			angle = 120
+		else:
+			print "\t* NOT Pseudotrigonal"
+
+		for subst in seq:
+			if mol.isPlaced[subst]:
+				continue
+
+			print "\n\t* AngleSpacing: %0.0f" % angle
+			cfslo = mol.cfs[seedAtom]['lo']
+			print "\t* cfs.lo = %f" % cfslo
+
+			# Update CFS
+			if not isHeadAtom:
+
+				if pseudoTrigonal:
+					# TODO: ADD OR SUBTRACT ANGLE DEPENDING ON ZIGZAG SENSE
+					# TODO: some other case for Zigzag??
+					pass
+				else:
+					print angle
+					mol.cfs[seedAtom]['lo'] += angle
+					mol.cfs[seedAtom]['lo'] = normalize(mol.cfs[seedAtom]['lo'])
+
+			cfslo = mol.cfs[seedAtom]['lo']
+			print "\t* cfs.lo = %f" % cfslo
+
+			print ""
+			place_atom(mol, seedAtom, subst, False, drawQueue)
+
+		# TODO: Double check dbl bond stereochem
 
 	# Draw depending on seed atom type
 	if mol.isInRing[seedAtom]:
@@ -229,8 +302,6 @@ def place_atom(mol, seedAtom, placeAtom, seedIsHeadAtom=False, drawQueue=[]):
 	Place Atom
 	Algorithm 11 from [Helson].
 	"""
-
-	# XXX: added this check myself.
 	if mol.isPlaced[placeAtom]:
 		return
 
@@ -252,38 +323,32 @@ def place_atom(mol, seedAtom, placeAtom, seedIsHeadAtom=False, drawQueue=[]):
 				mol.cfs[seedAtom]['lo'] = ring.angle # TODO: DOesn't work
 				break
 
-	# TODO TODO TODO TODO
-	# TODO TODO TODO TODO
-	# TODO TODO TODO TODO
-	# TODO TODO TODO TODO
-	# PLACE A AT BONDLEN DISTANCE @ ANGLE CFS[lo]
+	# FIXME 1: Need to read bond length from global configs
+	# FIXME 2: Switch to radians
 
 	BOND_LEN = 100
 
-	seedPt = mol.pos[seedAtom]
+	seedPos = mol.pos[seedAtom]
 	cfs = mol.cfs[seedAtom]['lo']
 
-	x = seedPt.x + BOND_LEN * sin(radians(cfs))
-	y = seedPt.y + BOND_LEN * cos(radians(cfs))
-
+	x = seedPos.x + BOND_LEN * cos(radians(cfs))
+	y = seedPos.y + BOND_LEN * sin(radians(cfs))
 	mol.pos[placeAtom] = Point(x, y)
 
-	# FIXME: Degrees or radians? 
-	# Set up the newly placed atom's CFS
-	g = mol.cfs[seedAtom]['lo']
-	dg = g - 180 # Points backwards
-
-	mol.cfs[placeAtom]['hi'] = dg
-	mol.cfs[placeAtom]['lo'] = dg
+	# Set up the newly placed atom's CFS (points backwards!)
+	g = mol.cfs[seedAtom]['lo'] - 180
+	mol.cfs[placeAtom]['hi'] = g
+	mol.cfs[placeAtom]['lo'] = g
 	mol.cfsInitialized[placeAtom] = True
 
-	# END TODO TODO TODO TODO
-	# END TODO TODO TODO TODO
-	# END TODO TODO TODO TODO
-
+	# XXX XXX DEBUG DUBUG
+	pt = mol.pos[seedAtom]
+	cfs1 = mol.cfs[seedAtom]['lo']
+	cfs2 = mol.cfs[placeAtom]['lo']
+	print "\tAtom %d Placed at %f:\n\t\t%s" % (placeAtom, cfs1, pt)
+	print "\t\tseed CFS.lo = %f, \n\t\tplaced CFS.lo = %f" % (cfs1, cfs2)
 
 	drawQueue.append(placeAtom) # TODO: ??? Why add to redraw queue?
 
 	# TODO: IF BOND IN PFU, DEPOSIT WHOLE PFU NOW.
-
 
