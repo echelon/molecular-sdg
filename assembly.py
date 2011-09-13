@@ -109,53 +109,43 @@ def angular_spacing2(mol, seedAtom, isHeadAtom=False):
 # XXX: Algorithm 7
 # TODO TODO TODO TODO: Entire algorithm.
 def substituent_sequence(mol, seedAtom, isHeadAtom=False):
+	"""
+	Sequence the substituents into attachment order.
+	"""
+	alpha = mol.alphaAtoms[seedAtom]
+	left = [x for x in alpha if mol.isPlaced[x] == False]
+	done = [x for x in alpha if mol.isPlaced[x] == True]
+	seq = []
 
-	return mol.alphaAtoms[seedAtom] # TODO TODO TODO TODO
+	chain = None
+	if mol.isInChain[seedAtom]:
+		for ch in mol.chains:
+			if seedAtom in ch:
+				chain = ch
+				break
 
-	pass
+	# Add chain members first (not in any kind of order...)
+	# XXX XXX: This is NOT the algorithm from [Helson]
+	if chain:
+		i = chain.index(seedAtom)
+		l = chain[i-1] if i > 0 else chain.caps[0]
+		r = chain[i+1] if i < len(chain)-1 else chain.caps[1]
+		if l in left:
+			left.pop(left.index(l))
+			done.append(l)
+			seq.append(l)
 
-	remaining = []
-	complete = []
+		if r in left:
+			left.pop(left.index(r))
+			done.append(r)
 
-	# Return sequence
-	sequence = []
+	# XXX: Add remaining atoms. NOT BASED ON [Helson]!
+	# TODO: By priority
+	done.extend(left)
+	seq.extend(left)
 
-	# TODO: Initialize to the set of atoms that have and have not been placed.
-	remaining = list(mol.alphaAtoms[seedAtom])
-
-	while len(remaining) > 0:
-
-		s = None
-
-		# TODO
-		chain = False # XXX TEMP
-		if seedAtom is chain:
-			pass # TODO
-
-		if len(complete) == 0:
-			pass # TODO
-
-		else:
-			#s = substituent immediately CCW of last chosen atom
-			pass # TODO
-
-		"""
-		ensure that s is not from the wrong side of a PFU --
-			let b be the bond from the seed atom to s.
-			if b is in a PFU:
-				examine the PFU's bonds that are adj to the seed atom,
-				and locate the bond q that is equal to the seed atom's local
-				CFS.hi (there must be one).
-				set s to q's other atom. 
-				add the PFU's atoms to complete and subtract the PFU's 
-				atoms from  remaining
-		"""
-
-		complete.append(s)
-		remaining.remove(s)
-		sequence.append(s)
-
-	return sequence
+	# TODO: Which to return?
+	return done
 
 # FIXME: Sequencing doesn't work yet...
 # TODO: Ring case -- deposit PFU if bond is in PFU (& incr A.D.)
@@ -208,7 +198,7 @@ def substituent_placement(mol, seedAtom, isHeadAtom=False, drawQueue=[]):
 				continue
 
 			cfslo = mol.cfs[seedAtom]['lo']
-			print "\t* cfs.lo (before change): %f" % cfslo
+			print "\n\t* cfs.lo (before change): %f" % cfslo
 			print "\t* beta angle: %f" % beta
 			print "\t* FxAS chain angle: %f" % CHAIN_ANGLE
 
@@ -224,13 +214,21 @@ def substituent_placement(mol, seedAtom, isHeadAtom=False, drawQueue=[]):
 			if chain and subst in chain:
 				if rightward:
 					print "\t* R zigzag"
+					#mol.cfs[seedAtom]['lo'] += beta # XXX TEST
 					mol.cfs[seedAtom]['lo'] += CHAIN_ANGLE
 					mol.cfs[seedAtom]['lo'] = normalize(mol.cfs[seedAtom]['lo'])
 				else:
 					print "\t* L zigzag"
-					print "\t* beta angle: %f" % beta
-					mol.cfs[seedAtom]['lo'] -= beta # XXX
+					#mol.cfs[seedAtom]['lo'] -= beta # XXX TEST
+					mol.cfs[seedAtom]['lo'] -= CHAIN_ANGLE # XXX
 					mol.cfs[seedAtom]['lo'] = normalize(mol.cfs[seedAtom]['lo'])
+
+			else:
+				print "\t* NOT IN CHAIN!"
+				mol.cfs[seedAtom]['lo'] += beta # XXX TEMP
+				mol.cfs[seedAtom]['lo'] = normalize(mol.cfs[seedAtom]['lo'])
+
+
 
 			print "\t** NOW CFS.LO IS: %f" % mol.cfs[seedAtom]['lo']
 			place_atom(mol, seedAtom, subst, False, drawQueue)
@@ -351,4 +349,34 @@ def place_atom(mol, seedAtom, placeAtom, seedIsHeadAtom=False, drawQueue=[]):
 	drawQueue.append(placeAtom) # TODO: ??? Why add to redraw queue?
 
 	# TODO: IF BOND IN PFU, DEPOSIT WHOLE PFU NOW.
+	# TODO: DEPOSIT RING GROUPS -- MUST CALCULATE OFFSET AND ANGLES
+	# XXX: Not based on Helson!
+	if mol.isInRing[placeAtom]:
+		# Calculate the atom offset position in the ring group
+		# TODO/FIXME: Doesn't take angle into consideration...
+		offset = Point(0, 0)
+		ringGroup = mol.ringGroupRef[placeAtom]
+		for ring in ringGroup:
+			if placeAtom in ring:
+				absPos = mol.pos[placeAtom]
+				relPos = ring.pos[ring.index(placeAtom)]
+				offset.x = absPos.x - relPos.x
+				offset.y = absPos.y - relPos.y
+				break
+
+		# Assign positions
+		for ring in ringGroup:
+			for atom in ring:
+				pos = ring.pos[ring.index(atom)]
+				pos.x += offset.x
+				pos.y += offset.y
+				mol.pos[atom] = pos
+				mol.isPlaced[atom] = True
+
+		# Queue all ring atoms...
+		for ring in ringGroup:
+			for atom in ring:
+				drawQueue.append(atom)
+
+
 

@@ -14,6 +14,8 @@ EXAMPLES = {
 		'hexene': 'C=CCCCC',
 		'hexyne': 'C#CCCCC',
 		'isohexane': 'CC(C)CCC',
+		'tertbutane': 'CC(C)C',
+		'tertpentane': 'CC(C)(C)C',
 	},
 
 	# Basic organic chemistry

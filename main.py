@@ -121,8 +121,8 @@ def redraw():
 		}
 		randX = 0
 		randY = 0
-		randX = random.randint(0, 10)
-		randY = random.randint(0, 10)
+		#randX = random.randint(0, 10)
+		#randY = random.randint(0, 10)
 
 		for nbr in mol.alphaAtoms[atom]:
 			bond = frozenset([atom, nbr])
