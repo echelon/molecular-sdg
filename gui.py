@@ -46,14 +46,14 @@ class Window(object):
 		self.drawable.set_size_request(500, 500)
 		self.vbox.add(self.drawable)
 
-		adj = gtk.Adjustment(1.0, 0.01, 2.0)
+		adj = gtk.Adjustment(0.5, 0.2, 1.5)
 		self.scale = gtk.HScale(adj)
 		self.vbox.add(self.scale)
 
-		poly = gtk.Adjustment(0, 3, 50, 1, 1, 0)
-		spin = gtk.SpinButton(poly, 1.0, 0)
-		spin.show()
-		self.vbox.add(spin)
+		#poly = gtk.Adjustment(0, 3, 50, 1, 1, 0)
+		#spin = gtk.SpinButton(poly, 1.0, 0)
+		#spin.show()
+		#self.vbox.add(spin)
 
 		def exitkey(ev):
 			# ESC 
@@ -75,7 +75,7 @@ class Window(object):
 		self.drawable.connect('expose-event', self.expose)
 		self.molEntry.connect('activate', self.smilesChanged)
 		self.scale.connect('value-changed', self.scaleChanged)
-		spin.connect('value-changed', self.spinChanged)
+		#spin.connect('value-changed', self.spinChanged)
 
 		# Must set these callbacks
 		self.drawCallback = None

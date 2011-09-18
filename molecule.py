@@ -3,7 +3,7 @@ TODO: Doc.
 """
 
 from weights import ATOMIC_WEIGHTS
-from ring import Point # TODO: Move elsewhere
+from point import Point
 
 # TODO: Add a __key__ check for assignment
 # 		Any invalid keys should not support assignment!

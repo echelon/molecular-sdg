@@ -26,7 +26,7 @@ from algo.path import *
 
 # Data structures
 from molecule import Molecule
-from ring import partition_rings
+from point import Point
 from chain import *
 
 # Perception
@@ -35,6 +35,7 @@ from perception.chains import *
 
 # Analysis Phase
 from analysis.rings import *
+from ring import partition_rings
 
 # Assembly Phase
 from assembly import * 
@@ -56,33 +57,56 @@ def redraw():
 
 	ctx = drawable.window.cairo_create()
 
-	# Size the window
-	size = drawable.window.get_size()
-	#center = get_average_position(ringGroups)
-	
-	# CLEAR
-	pat = SolidPattern(1.0, 1.0, 1.0, 1.0)
-	ctx.rectangle(-8000, -8000, 800000, 800000)
-	ctx.set_source(pat)
+	def get_dimensions(mol):
+		"""Get the molecule dimensions (width, height)."""
+		inf = float('Infinity')
+		minX, maxX = [inf, -inf]
+		minY, maxY = [inf, -inf]
+		for i in range(mol.size):
+			x = mol.pos[i].x
+			y = mol.pos[i].y
+			if x > maxX:
+				maxX = x
+			if x < minX:
+				minX = x
+			if y > maxY:
+				maxY = y
+			if y < minY:
+				minY = y
+		return Point(int(maxX - minX), int(maxY - minY))
+
+	def get_average_position(mol):
+		"""
+		Get the weighted center position (x, y) of the molecule.
+		NOTE: This is not the true center position.
+		"""
+		xSum = 0
+		ySum = 0
+		atoms = []
+		for i in range(mol.size):
+			xSum += mol.pos[i].x
+			ySum += mol.pos[i].y
+
+		return Point(int(xSum / mol.size), int(ySum / mol.size))
+
+	# Get window dimensions, molecule dimensions, and scale factor
+	# We'll use these to center the molecule in the canvas
+	wSize = Point(drawable.window.get_size())
+	mSize = get_dimensions(mol)
+	scale = window.getScale()
+
+	# 1. Center drawing relative to canvas size
+	# 2. Scale canvas as requested
+	# 3. Center the molecule
+	ctx.transform(cairo.Matrix(1, 0, 0, 1, wSize.x/2, wSize.y/2))
+	ctx.transform(cairo.Matrix(scale, 0, 0, scale, 0, 0))
+	ctx.transform(cairo.Matrix(1, 0, 0, 1, -1*mSize.x/2, -1*mSize.y/2))
+
+	# Clear canvas with clear color
+	ctx.set_source(SolidPattern(1.0, 1.0, 1.0, 1.0))
 	ctx.fill()
 
-	# Draw in center of context
-	#mat = cairo.Matrix(1, 0, 0, 1, 
-	#		size[0]/2 + center[0]*-1, size[1]/2 + center[1]*-1)
-	#ctx.transform(mat)
-
-	# XXX XXX DEBUG ONLY
-	mat = cairo.Matrix(1, 0, 0, 1,
-			size[0]/2 - 100, size[1]/2 - 100)
-	ctx.transform(mat)
-	# XXX XXX DEBUG ONLY
-
-	# Scale the image
-	scale = window.getScale()
-	scale *= 0.5 # XXX XXX DEBUG ONLY
-	mat = cairo.Matrix(scale, 0, 0, scale, 0, 0)
-	ctx.transform(mat)
-
+	# XXX DEBUG ONLY
 	window.debugText.hide() # XXX XXX DEBUG ONLY
 	window.debugText.set_size_request(0,0) # XXX XXX DEBUG ONLY
 	window.scroll.hide()

@@ -5,7 +5,7 @@ TODO: Doc
 
 from math import * 
 from chain import CHAIN_ANGLE
-from ring import Point # TODO: Move elsewhere
+from point import Point
 from util.angles import normalize
 
 def assemble(mol):
